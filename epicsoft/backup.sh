@@ -32,6 +32,7 @@ case ${BACKUP} in
     ;;
   * )
     logError "Backup '${BACKUP}' not supported"
+    exit 1
     ;;
 esac
 
