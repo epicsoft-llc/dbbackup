@@ -1,0 +1,65 @@
+stages:
+  - build
+  - release
+
+image: docker:latest
+
+services:
+  - docker:dind
+
+variables:
+  DOCKER_REGISTRY: "epicsoft/dbbackup"
+
+before_script:
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  - docker login -u="$DOCKER_HUB_USER" -p="$DOCKER_HUB_TOKEN"
+
+after_script:
+  - docker logout $CI_REGISTRY
+  - docker logout
+
+latest:
+  stage: build
+  variables:
+    VERSION: "latest"
+  script:
+    - echo "Build Docker image for database backup with version '${VERSION}'"
+    - docker buildx use epicbuilder > /dev/null 2>&1 || docker buildx create --name epicbuilder --use > /dev/null 2>&1
+    - docker buildx build . --push --pull --no-cache
+        --platform linux/amd64,linux/arm64
+        -t ${CI_REGISTRY_IMAGE}:${VERSION}
+        -t ${DOCKER_REGISTRY}:${VERSION}
+        --build-arg IMAGE_TAG=${VERSION}
+        --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+  retry: 2
+  only:
+    - master
+
+develop:
+  stage: build
+  variables:
+    VERSION: "develop"
+  script:
+    - echo "Build Docker image for database backup with version '${VERSION}'"
+    - docker buildx use epicbuilder > /dev/null 2>&1 || docker buildx create --name epicbuilder --use > /dev/null 2>&1
+    - docker buildx build . --push --pull --no-cache
+        --platform linux/amd64,linux/arm64
+        -t ${CI_REGISTRY_IMAGE}:${VERSION}
+        --build-arg IMAGE_TAG=${VERSION}
+        --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+  only:
+    - develop
+
+uploadReadme:
+  stage: release
+  script:
+    - docker run --rm -v $PWD:/workspace
+      -e DOCKERHUB_USERNAME=${DOCKER_HUB_USER}
+      -e DOCKERHUB_PASSWORD=${DOCKER_HUB_TOKEN}
+      -e DOCKERHUB_REPOSITORY=${DOCKER_REGISTRY}
+      -e SHORT_DESCRIPTION="Docker image for database backup based on official Alpine image"
+      -e README_FILEPATH='/workspace/README.md'
+        peterevans/dockerhub-description:latest
+  retry: 2
+  only:
+    - master
