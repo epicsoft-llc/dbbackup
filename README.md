@@ -5,7 +5,7 @@ This Docker image is managed and kept up to date by [epicsoft LLC](https://epics
 Docker image for creating database backups for [MySQL](https://www.mysql.com/), [MariaDB](https://mariadb.org/) and [PostgreSQL](https://www.postgresql.org/) based on official Alpine image.
 
 * Base image: https://hub.docker.com/_/alpine
-* Dockerfile: https://gitlab.com/epicsoft-networks/dbbackup/blob/master/Dockerfile
+* Dockerfile: https://gitlab.com/epicsoft-networks/dbbackup/blob/main/Dockerfile
 * Repository: https://gitlab.com/epicsoft-networks/dbbackup/tree/main
 * Container-Registry: https://gitlab.com/epicsoft-networks/dbbackup/container_registry
 * Docker Hub: https://hub.docker.com/r/epicsoft/dbbackup
@@ -92,6 +92,7 @@ Alpine packages are installed in the current image in the latest version - https
 
 ### MySQL dump
 
+```bash
 docker run --rm \
   -e BACKUP=mysql \
   -e MYSQL_HOST=example.com \
@@ -99,6 +100,7 @@ docker run --rm \
   -e MYSQL_PASSWORD='<PASSWORD>' \
   -v /tmp:/backup:rw \
   epicsoft/dbbackup:latest
+```
 
 ### PostgreSQL dump with custom filename
 
