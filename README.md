@@ -81,6 +81,7 @@ Alpine packages are installed in the current image in the latest version - https
 
 - bash
 - mariadb-client
+- mariadb-connector-c
 - mysql-client
 - postgresql16-client
 - aws-cli
@@ -89,7 +90,17 @@ Alpine packages are installed in the current image in the latest version - https
 
 ## Examples
 
-### PostgreSQL dump
+### MySQL dump
+
+docker run --rm -it \
+  -e BACKUP=mysql \
+  -e MYSQL_HOST=example.com \
+  -e MYSQL_USERNAME=<USERNAME> \
+  -e MYSQL_PASSWORD='<PASSWORD>' \
+  -v /tmp:/backup:rw \
+  epicsoft/dbbackup:latest
+
+### PostgreSQL dump with custom filename
 
 ```bash
 docker run --rm -it \
