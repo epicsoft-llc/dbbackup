@@ -26,7 +26,8 @@ fi
 
 S3_FILE_PATH="/"
 if [ ! -z "${S3_PREFIX}" ]; then
-  S3_FILE_PATH="${S3_PREFIX}";
+  S3_FILE_PATH="/${S3_PREFIX#/}";
+  S3_FILE_PATH="${S3_FILE_PATH%/}/"
 fi
 
 export AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY}
@@ -38,7 +39,7 @@ fi
 
 S3_ARGUMENTS=""
 if [ ! -z "${S3_ENDPOINT}" ]; then
-  S3_ARGUMENTS="${S3_ARGUMENTS} --endpoint-url ${S3_ENDPOINT}"
+  S3_ARGUMENTS="${S3_ARGUMENTS} --endpoint-url https://${S3_ENDPOINT}"
 fi
 
 if [ ! -z "$(echo ${S3_S3V4} | grep -i -E "(y|yes|true|1)")" ]; then

@@ -41,7 +41,7 @@ Working direktory: `/backup`
 - `S3_REGION` S3 bucket region ***required*** (not required for [MinIO](https://minio.io))
 - `S3_BUCKET` your S3 bucket path ***required***
 - `S3_PREFIX` path prefix in your bucket (default: `backup`)
-- `S3_ENDPOINT` S3 Endpoint URL, for S3 Compliant APIs such as [MinIO](https://minio.io) (default: *empty*)
+- `S3_ENDPOINT` S3 Endpoint URL without schema, for S3 Compliant APIs such as [MinIO](https://minio.io) (default: *empty*)
 - `S3_FILENAME` a consistent filename to overwrite with your backup. If not set will use a timestamp.
 - `S3_S3V4` set to `true` to enable Signature Version 4, required for [MinIO](https://minio.io) servers (default: `false`)
 
@@ -115,6 +115,28 @@ docker run --rm -it  \
   -e COMPRESS_ENABLE=true \
   -e COMPRESS_ENCRYPTION_PASSWORD='<COMPRESS-PASSWORD>' \
   -v /tmp:/backup:rw \
+  epicsoft/dbbackup:latest
+```
+
+### Dump a database from MariaDB and upload to S3
+
+*S3 upload tested with [Wasabi](https://wasabi.com/)*
+
+```bash
+docker run --rm -it  \
+  -e BACKUP=mariadb \
+  -e MARIADB_HOST=example.com \
+  -e MARIADBDUMP_DATABASES=<DATABASE-NAME> \
+  -e MARIADB_USERNAME=<USERNAME> \
+  -e MARIADB_PASSWORD='<PASSWORD>' \
+  -e S3_ENABLE=true \
+  -e S3_UPLOAD_ENABLE=true \
+  -e S3_ACCESS_KEY=<ACCESS-KEY> \
+  -e S3_SECRET_KEY=<SECRET-KEY> \
+  -e S3_BUCKET=backup \
+  -e S3_PREFIX=subdirectory \
+  -e S3_ENDPOINT=<ENDPOINT-WITHOUT-SCHEMA> \
+  -e S3_S3V4=true \
   epicsoft/dbbackup:latest
 ```
 

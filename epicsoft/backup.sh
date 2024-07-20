@@ -43,7 +43,7 @@ else
   logInfo "Compress disabled"
 fi
 
-if [ ! -z "$(echo ${S3_UPLOAD_ENABLE} | grep -i -E "(y|yes|true|1)")" ]; then
+if [ ! -z "$(echo ${S3_ENABLE} | grep -i -E "(y|yes|true|1)")" ]; then
   logInfo "S3 upload starting"
   source "${SCRIPT_DIR}/s3.sh"
   logInfo "S3 upload completed"
