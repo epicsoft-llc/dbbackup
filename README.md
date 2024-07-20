@@ -92,7 +92,7 @@ Alpine packages are installed in the current image in the latest version - https
 
 ### MySQL dump
 
-docker run --rm -it \
+docker run --rm \
   -e BACKUP=mysql \
   -e MYSQL_HOST=example.com \
   -e MYSQL_USERNAME=<USERNAME> \
@@ -103,7 +103,7 @@ docker run --rm -it \
 ### PostgreSQL dump with custom filename
 
 ```bash
-docker run --rm -it \
+docker run --rm \
   -e BACKUP=pgsql \
   -e PGSQL_HOST=example.com \
   -e PGSQL_PORT=5432 \
@@ -117,7 +117,7 @@ docker run --rm -it \
 ### Dump a database from MariaDB and compress with encryption
 
 ```bash
-docker run --rm -it  \
+docker run --rm \
   -e BACKUP=mariadb \
   -e MARIADB_HOST=example.com \
   -e MARIADBDUMP_DATABASES=<DATABASE-NAME> \
@@ -134,7 +134,7 @@ docker run --rm -it  \
 *S3 upload tested with [Wasabi](https://wasabi.com/)*
 
 ```bash
-docker run --rm -it  \
+docker run --rm \
   -e BACKUP=mariadb \
   -e MARIADB_HOST=example.com \
   -e MARIADBDUMP_DATABASES=<DATABASE-NAME> \
