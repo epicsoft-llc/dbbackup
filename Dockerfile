@@ -56,6 +56,7 @@ ENV S3_S3V4="false"
 
 RUN apk --no-cache add bash \
                        mariadb-client \
+                       mariadb-connector-c \
                        mysql-client \
                        postgresql16-client \
                        aws-cli \
