@@ -33,7 +33,7 @@ latest:
         --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
   retry: 2
   only:
-    - master
+    - main
 
 develop:
   stage: build
@@ -62,4 +62,4 @@ uploadReadme:
         peterevans/dockerhub-description:latest
   retry: 2
   only:
-    - master
+    - main
