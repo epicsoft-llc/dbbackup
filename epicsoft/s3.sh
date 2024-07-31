@@ -1,9 +1,5 @@
 #!/bin/bash
 
-readonly COMPRESS_FILE_NAME="${__BACKUP_FILE_NAME}"
-readonly COMPRESS_FILE_PATH="${__BACKUP_FILE_PATH}"
-readonly COMPRESS_FILE="${COMPRESS_FILE_PATH}/${COMPRESS_FILE_NAME}"
-
 if [ -z "${S3_ACCESS_KEY}" ]; then
   logError "You need to set the 'S3_ACCESS_KEY' environment variable."
   exit 1

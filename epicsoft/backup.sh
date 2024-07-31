@@ -2,8 +2,8 @@
 
 set -e
 
-SCRIPT_DIR="$(dirname "$0")"
-WORKING_DIR="/backup"
+readonly SCRIPT_DIR="$(dirname "$0")"
+readonly WORKING_DIR="/backup"
 
 source "${SCRIPT_DIR}/utils.sh"
 
