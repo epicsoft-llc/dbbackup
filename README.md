@@ -63,6 +63,7 @@ Working direktory: `/backup`
 - `MYSQL_USERNAME` database username ***required***
 - `MYSQL_PASSWORD` database password ***required***
 - `MYSQLDUMP_OPTIONS` dump options (default: `--verbose --hex-blob --quote-names --quick --add-drop-table --add-locks --create-options --allow-keywords --disable-keys --extended-insert --single-transaction --comments --no-tablespaces`)
+- `MYSQLDUMP_ADD_OPTIONS` additional dump options (default: *empty*)
 - `MYSQLDUMP_DATABASES` list of databases to backup (default: `--all-databases`)
 - `MYSQLDUMP_FILENAME` name of backup file (default: `backup`)
 
