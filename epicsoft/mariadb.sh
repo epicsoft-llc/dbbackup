@@ -47,11 +47,11 @@ rm -rf ${MARIADBDUMP_FILE}
 
 if [ "${MARIADBDUMP_DATABASES}" == "--all-databases" ]; then
   logInfo "MariaDB dump starting for all database(s)"
-  mariadb-dump ${MARIADB_HOST_OPTS} ${MARIADBDUMP_OPTIONS} --all-databases > ${MARIADBDUMP_FILE}
+  mariadb-dump ${MARIADB_HOST_OPTS} ${MARIADBDUMP_OPTIONS} ${MARIADBDUMP_ADD_OPTIONS} --all-databases > ${MARIADBDUMP_FILE}
   logInfo "MariaDB dump completed for all database(s)"
 else
   logInfo "MariaDB dump starting for '${MARIADBDUMP_DATABASES}' databases"
-  mariadb-dump ${MARIADB_HOST_OPTS} ${MARIADBDUMP_OPTIONS} --databases ${MARIADBDUMP_DATABASES} > ${MARIADBDUMP_FILE}
+  mariadb-dump ${MARIADB_HOST_OPTS} ${MARIADBDUMP_OPTIONS} ${MARIADBDUMP_ADD_OPTIONS} --databases ${MARIADBDUMP_DATABASES} > ${MARIADBDUMP_FILE}
   logInfo "MariaDB dump completed for '${MARIADBDUMP_DATABASES}' databases"
 fi
 

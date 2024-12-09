@@ -47,11 +47,11 @@ rm -rf ${MYSQLDUMP_FILE}
 
 if [ "${MYSQLDUMP_DATABASES}" == "--all-databases" ]; then
   logInfo "MySQL dump starting for all databases"
-  mysqldump ${MYSQL_HOST_OPTS} ${MYSQLDUMP_OPTIONS} --all-databases > ${MYSQLDUMP_FILE}
+  mysqldump ${MYSQL_HOST_OPTS} ${MYSQLDUMP_OPTIONS} ${MYSQLDUMP_ADD_OPTIONS} --all-databases > ${MYSQLDUMP_FILE}
   logInfo "MySQL dump completed for all databases"
 else
   logInfo "MySQL dump starting for '${MYSQLDUMP_DATABASES}' database(s)"
-  mysqldump ${MYSQL_HOST_OPTS} ${MYSQLDUMP_OPTIONS} --databases ${MYSQLDUMP_DATABASES} > ${MYSQLDUMP_FILE}
+  mysqldump ${MYSQL_HOST_OPTS} ${MYSQLDUMP_OPTIONS} ${MYSQLDUMP_ADD_OPTIONS} --databases ${MYSQLDUMP_DATABASES} > ${MYSQLDUMP_FILE}
   logInfo "MySQL dump completed for '${MYSQLDUMP_DATABASES}' database(s)"
 fi
 
