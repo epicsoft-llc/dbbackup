@@ -43,6 +43,7 @@ ENV PGSQL_PASSWORD=""
 ENV PGSQL_OPTIONS="--verbose"
 ENV PGSQL_DATABASES="--all-databases"
 ENV PGSQL_FILENAME="backup"
+ENV PGSQL_VERSION="16"
 ENV COMPRESS_ENABLE="false"
 ENV COMPRESS_OPTIONS="a -t7z -md=20 -m0=lzma2 -mx=9 -mmt=on -aoa"
 ENV COMPRESS_ENCRYPTION_PASSWORD=""
@@ -60,7 +61,9 @@ RUN apk --no-cache add bash \
                        mariadb-client \
                        mariadb-connector-c \
                        mysql-client \
+                       postgresql15-client \
                        postgresql16-client \
+                       postgresql17-client \
                        aws-cli \
                        p7zip \
                        ca-certificates \

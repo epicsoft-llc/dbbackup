@@ -76,6 +76,7 @@ Working direktory: `/backup`
 - `PGSQL_OPTIONS` dump options (default: `--verbose`)
 - `PGSQL_DATABASES` list of databases to backup (default: `--all-databases`)
 - `PGSQL_FILENAME` name of backup file (default: `backup`)
+- `PGSQL_VERSION` Version number of the pg-client; possible values are `15`, `16`, and `17` (default: `16`)
 
 ## Installed Alpine packages
 
@@ -114,6 +115,7 @@ docker run --rm \
   -e PGSQL_USERNAME=<USERNAME> \
   -e PGSQL_PASSWORD='<PASSWORD>' \
   -e PGSQL_FILENAME=pg-example \
+  -e PGSQL_VERSION=17 \
   -v /tmp:/backup:rw \
   epicsoft/dbbackup:latest
 ```
