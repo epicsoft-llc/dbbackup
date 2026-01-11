@@ -76,7 +76,7 @@ Working direktory: `/backup`
 - `PGSQL_OPTIONS` dump options (default: `--verbose`)
 - `PGSQL_DATABASES` list of databases to backup (default: `--all-databases`)
 - `PGSQL_FILENAME` name of backup file (default: `backup`)
-- `PGSQL_VERSION` Version number of the pg-client; possible values are `15`, `16`, and `17` (default: `16`)
+- `PGSQL_VERSION` Version number of the pg-client; possible values are `17` and `18` (default: `17`)
 
 ## Installed Alpine packages
 
@@ -86,7 +86,8 @@ Alpine packages are installed in the current image in the latest version - https
 - mariadb-client
 - mariadb-connector-c
 - mysql-client
-- postgresql16-client
+- postgresql17-client
+- postgresql18-client
 - aws-cli
 - p7zip
 - ca-certificates
