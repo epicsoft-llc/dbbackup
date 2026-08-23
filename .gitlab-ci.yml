@@ -9,6 +9,7 @@ services:
 
 variables:
   DOCKER_REGISTRY: "epicsoft/dbbackup"
+  BUILDX_NO_DEFAULT_ATTESTATIONS: "1"
 
 before_script:
   - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
