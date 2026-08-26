@@ -42,7 +42,14 @@ if [ -z "${MYSQLDUMP_FILENAME}" ]; then
   exit 1
 fi
 
-MYSQL_HOST_OPTS="--host=${MYSQL_HOST} --port=${MYSQL_PORT} --user=${MYSQL_USERNAME} --password=${MYSQL_PASSWORD}"
+# the password is passed in an option file instead of on the command line, where any
+# process in the container - and 'docker top' on the host - would be able to read it
+readonly MYSQL_DEFAULTS_FILE="$(mktemp)"
+trap 'rm -f "${MYSQL_DEFAULTS_FILE}"' EXIT
+chmod 0600 "${MYSQL_DEFAULTS_FILE}"
+writeClientPasswordFile "${MYSQL_DEFAULTS_FILE}" "${MYSQL_PASSWORD}"
+
+MYSQL_HOST_OPTS="--defaults-extra-file=${MYSQL_DEFAULTS_FILE} --host=${MYSQL_HOST} --port=${MYSQL_PORT} --user=${MYSQL_USERNAME}"
 
 mkdir -p ${MYSQLDUMP_FILE_PATH}
 rm -rf ${MYSQLDUMP_FILE}

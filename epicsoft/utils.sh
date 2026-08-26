@@ -22,6 +22,19 @@ logError() {
   echo -e "${COLOR_RED}${_DATE} [ERROR] ${_MSG}${COLOR_RESET}";
 }
 
+# writes a MySQL/MariaDB option file <FILE> containing <PASSWORD> in the [client] group.
+# in a quoted option file value only \b \t \n \r \\ \s are escape sequences, so a literal
+# backslash has to be doubled and the surrounding quote has to be escaped
+writeClientPasswordFile() {
+  local _FILE=${1}
+  local _PASSWORD=${2}
+
+  _PASSWORD="${_PASSWORD//\\/\\\\}"
+  _PASSWORD="${_PASSWORD//\"/\\\"}"
+
+  printf '[client]\npassword="%s"\n' "${_PASSWORD}" > "${_FILE}"
+}
+
 # reads the value of <VAR_NAME> from the file in <VAR_NAME>_FILE, if that variable is set
 readSecretFile() {
   local _VAR_NAME=${1}

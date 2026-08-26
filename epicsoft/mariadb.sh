@@ -42,7 +42,14 @@ if [ -z "${MARIADBDUMP_FILENAME}" ]; then
   exit 1
 fi
 
-MARIADB_HOST_OPTS="--host=${MARIADB_HOST} --port=${MARIADB_PORT} --user=${MARIADB_USERNAME} --password=${MARIADB_PASSWORD}"
+# the password is passed in an option file instead of on the command line, where any
+# process in the container - and 'docker top' on the host - would be able to read it
+readonly MARIADB_DEFAULTS_FILE="$(mktemp)"
+trap 'rm -f "${MARIADB_DEFAULTS_FILE}"' EXIT
+chmod 0600 "${MARIADB_DEFAULTS_FILE}"
+writeClientPasswordFile "${MARIADB_DEFAULTS_FILE}" "${MARIADB_PASSWORD}"
+
+MARIADB_HOST_OPTS="--defaults-extra-file=${MARIADB_DEFAULTS_FILE} --host=${MARIADB_HOST} --port=${MARIADB_PORT} --user=${MARIADB_USERNAME}"
 
 mkdir -p ${MARIADBDUMP_FILE_PATH}
 rm -rf ${MARIADBDUMP_FILE}

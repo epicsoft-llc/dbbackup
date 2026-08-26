@@ -48,6 +48,8 @@ Every password and key can be read from a file instead of an environment variabl
 - `S3_ACCESS_KEY_FILE`
 - `S3_SECRET_KEY_FILE`
 
+For MySQL and MariaDB the password is never passed on the command line: the dump is started with a `--defaults-extra-file` that is created at runtime with mode 0600 and removed again when the backup ends. That way the password is not visible in the process list of the container or in `docker top` on the host. For PostgreSQL the password is handed over in `PGPASSWORD` and is not visible there either.
+
 A trailing newline in the file is stripped. Setting a variable and its `_FILE` counterpart at the same time is an error, as is a missing, unreadable or empty file. In cron mode the file is read again on every scheduled run.
 
 ## Versions
