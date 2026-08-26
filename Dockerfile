@@ -88,6 +88,7 @@ RUN apk --no-cache add bash \
  && rm -rf /var/cache/apk/*
 
 ADD epicsoft epicsoft
-RUN chmod +x /epicsoft/*.sh
+RUN chmod +x /epicsoft/*.sh \
+ && ln -s /epicsoft/backup-now.sh /usr/local/bin/backup-now
 
 CMD [ "bash", "epicsoft/entrypoint.sh" ]

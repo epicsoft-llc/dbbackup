@@ -25,6 +25,7 @@ Features:
 - Run the backup on a schedule inside a long running container (cron)
 - Remove old backup files from the working directory (retention)
 - Call a webhook after a successful or a failed backup
+- Trigger a backup manually in a running cron container
 
 Working direktory: `/backup`
 
@@ -38,6 +39,18 @@ The image supports two modes:
 In cron mode a failing backup does *not* stop the container — the error is logged and the next scheduled run is executed as usual. If a backup is still running when the next run is due, that run is skipped with a warning instead of running twice in parallel. All output of the scheduled backups is written to the container log (`docker logs`).
 
 Use `TZ` to set the timezone the schedule is evaluated in — without it the schedule uses `UTC`.
+
+## Triggering a backup manually
+
+A running cron container can create a backup right away, which is the quickest way to check whether a new configuration actually works:
+
+```bash
+docker exec <container> backup-now
+```
+
+The manual run goes through the same code as a scheduled one - same environment, same lock, same compression, upload, retention and webhooks - and its output appears in the terminal instead of in `docker logs`. It exits with the exit code of the backup, so it can be used in a script or a pipeline. If a scheduled backup happens to be running at that moment, the manual run is skipped with a warning instead of running a second dump in parallel.
+
+`CRON_RUN_ON_START=true` does the same thing once at container start.
 
 ## Secrets from files
 
