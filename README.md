@@ -65,6 +65,8 @@ A backup file is removed only if **neither** rule wants to keep it. That makes `
 
 The cleanup only ever touches files of this backup in the working directory, that is files matching `*.<FILENAME>.sql*` with the `MARIADBDUMP_FILENAME`, `MYSQLDUMP_FILENAME` or `PGSQL_FILENAME` of the current configuration. Other files in the directory, including backups written with a different filename, are left alone. Empty files left behind by a failed dump are always removed and never count as a backup.
 
+A dump that was aborted leaves a truncated file behind, because the shell creates the target of the redirection before the dump command fails. Such a file is removed at the end of a failed run, so it can never be mistaken for a backup. A dump that completed is kept even if a later step - compression or upload - fails.
+
 The cleanup runs only after the dump - and if enabled, the upload - succeeded. A failed backup never deletes anything. Files that were already uploaded to S3 are not affected; use the lifecycle rules of the bucket for retention there.
 
 ## Webhooks
@@ -108,11 +110,12 @@ docker run --rm \
   "file_path": "/backup",
   "file_size": 817,
   "compressed": true,
+  "encrypted": true,
   "s3_target": "s3://backups/nightly/20260826-051428.backup.sql.7z"
 }
 ```
 
-The body never contains a password, a key or a token. Every field that is not known yet is sent as `null`, which is what most fields look like when the run failed before the dump started. `status` is `success` or `failure` and `exit_code` is the exit code of the backup.
+`file_size` is the size of the backup file in bytes - after compression, if that is enabled, so it is the size of the file that `file_name` names. `compressed` says whether the dump was packed with 7-Zip and `encrypted` whether that archive is password protected - the two are independent, compression without a password is possible. The body never contains a password, a key or a token. Every field that is not known yet is sent as `null`, which is what most fields look like when the run failed before the dump started. `status` is `success` or `failure` and `exit_code` is the exit code of the backup.
 
 A webhook that cannot be reached or that answers with anything other than `2xx` is logged as a warning and does not turn a successful backup into a failed one. Each call waits at most 10 seconds and is retried twice. Because a webhook URL often contains a token, `WEBHOOK_SUCCESS_URL_FILE` and `WEBHOOK_FAILURE_URL_FILE` are available as well.
 
@@ -140,7 +143,7 @@ A webhook that cannot be reached or that answers with anything other than `2xx` 
 - `S3_REGION` S3 bucket region ***required*** (not required for [MinIO](https://minio.io))
 - `S3_BUCKET` your S3 bucket path ***required***
 - `S3_PREFIX` path prefix in your bucket (default: `backup`)
-- `S3_ENDPOINT` S3 Endpoint URL without schema, for S3 Compliant APIs such as [MinIO](https://minio.io) (default: *empty*)
+- `S3_ENDPOINT` S3 Endpoint URL without schema, for S3 Compliant APIs such as [MinIO](https://minio.io). The endpoint is always called over `https` (default: *empty*)
 - `S3_FILENAME` a consistent filename to overwrite with your backup. If not set will use a timestamp.
 - `S3_S3V4` set to `true` to enable Signature Version 4, required for [MinIO](https://minio.io) servers (default: `false`)
 

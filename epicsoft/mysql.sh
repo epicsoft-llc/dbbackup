@@ -54,6 +54,8 @@ MYSQL_HOST_OPTS="--defaults-extra-file=${MYSQL_DEFAULTS_FILE} --host=${MYSQL_HOS
 mkdir -p ${MYSQLDUMP_FILE_PATH}
 rm -rf ${MYSQLDUMP_FILE}
 
+registerFailureCleanupFile "${MYSQLDUMP_FILE}"
+
 if [ "${MYSQLDUMP_DATABASES}" == "--all-databases" ]; then
   logInfo "MySQL dump starting for all databases"
   mysqldump ${MYSQL_HOST_OPTS} ${MYSQLDUMP_OPTIONS} ${MYSQLDUMP_ADD_OPTIONS} --all-databases > ${MYSQLDUMP_FILE}
@@ -63,6 +65,9 @@ else
   mysqldump ${MYSQL_HOST_OPTS} ${MYSQLDUMP_OPTIONS} ${MYSQLDUMP_ADD_OPTIONS} --databases ${MYSQLDUMP_DATABASES} > ${MYSQLDUMP_FILE}
   logInfo "MySQL dump completed for '${MYSQLDUMP_DATABASES}' database(s)"
 fi
+
+# the dump is complete, so it survives a later failure of another stage
+clearFailureCleanupFiles
 
 readonly __DBBACKUP_FILE_NAME="${MYSQLDUMP_FILE_NAME}"
 readonly __DBBACKUP_FILE_PATH="${MYSQLDUMP_FILE_PATH}"

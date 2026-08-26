@@ -42,6 +42,32 @@ removeCleanupFiles() {
   __CLEANUP_FILES=()
 }
 
+__FAILURE_CLEANUP_FILES=()
+
+# an aborted dump or compression leaves a truncated file behind - the shell creates the
+# redirect target before the command fails. such a file is not a backup and must not
+# survive the run, but it is dropped only if the work it belongs to did not finish
+registerFailureCleanupFile() {
+  __FAILURE_CLEANUP_FILES+=("${1}")
+}
+
+clearFailureCleanupFiles() {
+  __FAILURE_CLEANUP_FILES=()
+}
+
+removeFailureCleanupFiles() {
+  local _FILE
+
+  for _FILE in "${__FAILURE_CLEANUP_FILES[@]}"; do
+    if [ ! -z "${_FILE}" ] && [ -f "${_FILE}" ]; then
+      logInfo "Removing incomplete file '$(basename "${_FILE}")'"
+      rm -f "${_FILE}"
+    fi
+  done
+
+  __FAILURE_CLEANUP_FILES=()
+}
+
 # quotes <VALUE> as a JSON string, or 'null' if it is empty
 jsonValue() {
   local _VALUE=${1}

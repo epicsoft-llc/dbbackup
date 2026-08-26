@@ -43,6 +43,8 @@ rm -rf ${PGSQLDUMP_FILE}
 
 PGSQL_ARGUMENTS="--host=${PGSQL_HOST} --port=${PGSQL_PORT} --username=${PGSQL_USERNAME} --no-password"
 
+registerFailureCleanupFile "${PGSQLDUMP_FILE}"
+
 if [ "${PGSQL_DATABASES}" == "--all-databases" ]; then
   logInfo "PostgreSQL dump starting for all databases"
   PGPASSWORD="${PGSQL_PASSWORD}" ${PGSQL_ROOT_PATH}/pg_dumpall ${PGSQL_ARGUMENTS} ${PGSQL_OPTIONS} > ${PGSQLDUMP_FILE}
@@ -59,6 +61,9 @@ else
   done
   logInfo "PostgreSQL dump completed for '${PGSQL_DATABASES}' database(s)"
 fi
+
+# the dump is complete, so it survives a later failure of another stage
+clearFailureCleanupFiles
 
 readonly __DBBACKUP_FILE_NAME="${PGSQLDUMP_FILE_NAME}"
 readonly __DBBACKUP_FILE_PATH="${PGSQLDUMP_FILE_PATH}"

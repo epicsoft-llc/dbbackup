@@ -16,6 +16,7 @@ __BACKUP_TYPE=""
 __BACKUP_DATABASE_HOST=""
 __BACKUP_DATABASES=""
 __BACKUP_COMPRESSED="false"
+__BACKUP_ENCRYPTED="false"
 __BACKUP_S3_TARGET=""
 
 buildWebhookBody() {
@@ -27,7 +28,7 @@ buildWebhookBody() {
     _SIZE="$(stat -c %s "${__BACKUP_FILE}")"
   fi
 
-  printf '{"status":%s,"backup":%s,"hostname":%s,"database_host":%s,"databases":%s,"started_at":%s,"finished_at":%s,"duration_seconds":%s,"exit_code":%s,"file_name":%s,"file_path":%s,"file_size":%s,"compressed":%s,"s3_target":%s}' \
+  printf '{"status":%s,"backup":%s,"hostname":%s,"database_host":%s,"databases":%s,"started_at":%s,"finished_at":%s,"duration_seconds":%s,"exit_code":%s,"file_name":%s,"file_path":%s,"file_size":%s,"compressed":%s,"encrypted":%s,"s3_target":%s}' \
     "$(jsonValue "${_STATUS}")" \
     "$(jsonValue "${__BACKUP_TYPE}")" \
     "$(jsonValue "$(hostname)")" \
@@ -41,6 +42,7 @@ buildWebhookBody() {
     "$(jsonValue "${__BACKUP_FILE_PATH}")" \
     "$(jsonNumber "${_SIZE}")" \
     "${__BACKUP_COMPRESSED}" \
+    "${__BACKUP_ENCRYPTED}" \
     "$(jsonValue "${__BACKUP_S3_TARGET}")"
 }
 
@@ -56,6 +58,7 @@ onBackupExit() {
   if [ ${_CODE} != 0 ]; then
     _STATUS="failure"
     _URL="${WEBHOOK_FAILURE_URL}"
+    removeFailureCleanupFiles
   fi
 
   if [ -z "${_URL}" ]; then
