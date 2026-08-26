@@ -1,5 +1,8 @@
 #!/bin/bash
 
+readSecretFile "S3_ACCESS_KEY"
+readSecretFile "S3_SECRET_KEY"
+
 if [ -z "${S3_ACCESS_KEY}" ]; then
   logError "You need to set the 'S3_ACCESS_KEY' environment variable."
   exit 1
@@ -38,15 +41,20 @@ if [ ! -z "${S3_ENDPOINT}" ]; then
   S3_ARGUMENTS="${S3_ARGUMENTS} --endpoint-url https://${S3_ENDPOINT}"
 fi
 
-if [ ! -z "$(echo ${S3_S3V4} | grep -i -E "(y|yes|true|1)")" ]; then
+if [ ! -z "$(echo "${S3_S3V4}" | grep -i -E "(y|yes|true|1)")" ]; then
   aws configure set default.s3.signature_version s3v4
 fi
 
-echo "Uploading '${S3_FILE_NAME}' on S3 ..."
-aws s3 cp ${__BACKUP_FILE} s3://${S3_BUCKET}${S3_FILE_PATH}${S3_FILE_NAME} ${S3_ARGUMENTS}
-S3_RESULT=$?
+logInfo "Uploading '${S3_FILE_NAME}' to S3"
+
+# without the '|| S3_RESULT=$?' the 'set -e' of backup.sh would abort on the aws call
+# itself and the error below would never be reached
+S3_RESULT=0
+aws s3 cp ${__BACKUP_FILE} s3://${S3_BUCKET}${S3_FILE_PATH}${S3_FILE_NAME} ${S3_ARGUMENTS} || S3_RESULT=$?
 
 if [ ${S3_RESULT} != 0 ]; then
-  logError "S3 upload '${S3_FILE_NAME}' on S3 (code: ${S3_RESULT})"
+  logError "Upload of '${S3_FILE_NAME}' to S3 failed (code: ${S3_RESULT})"
   exit 1
 fi
+
+__BACKUP_S3_TARGET="s3://${S3_BUCKET}${S3_FILE_PATH}${S3_FILE_NAME}"

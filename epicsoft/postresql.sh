@@ -6,6 +6,8 @@ readonly PGSQLDUMP_FILE_PATH="${WORKING_DIR}"
 readonly PGSQLDUMP_FILE="${PGSQLDUMP_FILE_PATH}/${PGSQLDUMP_FILE_NAME}"
 readonly PGSQL_ROOT_PATH="/usr/libexec/postgresql${PGSQL_VERSION}"
 
+readSecretFile "PGSQL_PASSWORD"
+
 if [ -z "${PGSQL_HOST}" ]; then
   logError "You need to set the 'PGSQL_HOST' environment variable."
   exit 1
@@ -36,27 +38,32 @@ if [ -z "${PGSQL_VERSION}" ]; then
   exit 1
 fi
 
-mkdir -p ${PGSQLDUMP_FILE_PATH}
-rm -rf ${PGSQLDUMP_FILE}
+mkdir -p "${PGSQLDUMP_FILE_PATH}"
+rm -rf "${PGSQLDUMP_FILE}"
 
 PGSQL_ARGUMENTS="--host=${PGSQL_HOST} --port=${PGSQL_PORT} --username=${PGSQL_USERNAME} --no-password"
 
+registerFailureCleanupFile "${PGSQLDUMP_FILE}"
+
 if [ "${PGSQL_DATABASES}" == "--all-databases" ]; then
   logInfo "PostgreSQL dump starting for all databases"
-  PGPASSWORD="${PGSQL_PASSWORD}" ${PGSQL_ROOT_PATH}/pg_dumpall ${PGSQL_ARGUMENTS} ${PGSQL_OPTIONS} > ${PGSQLDUMP_FILE}
+  PGPASSWORD="${PGSQL_PASSWORD}" "${PGSQL_ROOT_PATH}/pg_dumpall" ${PGSQL_ARGUMENTS} ${PGSQL_OPTIONS} > "${PGSQLDUMP_FILE}"
   logInfo "PostgreSQL dump completed for all databases"
 else
   logInfo "PostgreSQL dump starting for '${PGSQL_DATABASES}' database(s)"
   for PGSQL_DB in ${PGSQL_DATABASES}; do
     logInfo "PostgreSQL dump starting for '${PGSQL_DB}' database"
-    echo "-- ###############################################################################" >> ${PGSQLDUMP_FILE}
-    echo "-- #### PostgreSQL backup database: ${PGSQL_DB}" >> ${PGSQLDUMP_FILE}
-    echo "-- ###############################################################################" >> ${PGSQLDUMP_FILE}
-    PGPASSWORD="${PGSQL_PASSWORD}" ${PGSQL_ROOT_PATH}/pg_dump ${PGSQL_ARGUMENTS} ${PGSQL_OPTIONS} ${PGSQL_DB} >> ${PGSQLDUMP_FILE}
+    echo "-- ###############################################################################" >> "${PGSQLDUMP_FILE}"
+    echo "-- #### PostgreSQL backup database: ${PGSQL_DB}" >> "${PGSQLDUMP_FILE}"
+    echo "-- ###############################################################################" >> "${PGSQLDUMP_FILE}"
+    PGPASSWORD="${PGSQL_PASSWORD}" "${PGSQL_ROOT_PATH}/pg_dump" ${PGSQL_ARGUMENTS} ${PGSQL_OPTIONS} ${PGSQL_DB} >> "${PGSQLDUMP_FILE}"
     logInfo "PostgreSQL dump completed for '${PGSQL_DB}' database"
   done
   logInfo "PostgreSQL dump completed for '${PGSQL_DATABASES}' database(s)"
 fi
+
+# the dump is complete, so it survives a later failure of another stage
+clearFailureCleanupFile "${PGSQLDUMP_FILE}"
 
 readonly __DBBACKUP_FILE_NAME="${PGSQLDUMP_FILE_NAME}"
 readonly __DBBACKUP_FILE_PATH="${PGSQLDUMP_FILE_PATH}"
@@ -65,3 +72,6 @@ readonly __DBBACKUP_FILE="${PGSQLDUMP_FILE}"
 __BACKUP_FILE_NAME="${PGSQLDUMP_FILE_NAME}"
 __BACKUP_FILE_PATH="${PGSQLDUMP_FILE_PATH}"
 __BACKUP_FILE="${PGSQLDUMP_FILE}"
+__BACKUP_FILE_PATTERN="*.${PGSQL_FILENAME}.sql*"
+__BACKUP_DATABASE_HOST="${PGSQL_HOST}"
+__BACKUP_DATABASES="${PGSQL_DATABASES}"

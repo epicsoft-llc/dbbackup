@@ -5,6 +5,8 @@ readonly MYSQLDUMP_FILE_NAME="${MYSQLDUMP_START_TIME}.${MYSQLDUMP_FILENAME}.sql"
 readonly MYSQLDUMP_FILE_PATH="${WORKING_DIR}"
 readonly MYSQLDUMP_FILE="${MYSQLDUMP_FILE_PATH}/${MYSQLDUMP_FILE_NAME}"
 
+readSecretFile "MYSQL_PASSWORD"
+
 if [ -z "${MYSQL_HOST}" ]; then
   logError "You need to set the 'MYSQL_HOST' environment variable."
   exit 1
@@ -40,20 +42,32 @@ if [ -z "${MYSQLDUMP_FILENAME}" ]; then
   exit 1
 fi
 
-MYSQL_HOST_OPTS="--host=${MYSQL_HOST} --port=${MYSQL_PORT} --user=${MYSQL_USERNAME} --password=${MYSQL_PASSWORD}"
+# the password is passed in an option file instead of on the command line, where any
+# process in the container - and 'docker top' on the host - would be able to read it
+readonly MYSQL_DEFAULTS_FILE="$(mktemp)"
+registerCleanupFile "${MYSQL_DEFAULTS_FILE}"
+chmod 0600 "${MYSQL_DEFAULTS_FILE}"
+writeClientPasswordFile "${MYSQL_DEFAULTS_FILE}" "${MYSQL_PASSWORD}"
 
-mkdir -p ${MYSQLDUMP_FILE_PATH}
-rm -rf ${MYSQLDUMP_FILE}
+MYSQL_HOST_OPTS="--defaults-extra-file=${MYSQL_DEFAULTS_FILE} --host=${MYSQL_HOST} --port=${MYSQL_PORT} --user=${MYSQL_USERNAME}"
+
+mkdir -p "${MYSQLDUMP_FILE_PATH}"
+rm -rf "${MYSQLDUMP_FILE}"
+
+registerFailureCleanupFile "${MYSQLDUMP_FILE}"
 
 if [ "${MYSQLDUMP_DATABASES}" == "--all-databases" ]; then
   logInfo "MySQL dump starting for all databases"
-  mysqldump ${MYSQL_HOST_OPTS} ${MYSQLDUMP_OPTIONS} ${MYSQLDUMP_ADD_OPTIONS} --all-databases > ${MYSQLDUMP_FILE}
+  mysqldump ${MYSQL_HOST_OPTS} ${MYSQLDUMP_OPTIONS} ${MYSQLDUMP_ADD_OPTIONS} --all-databases > "${MYSQLDUMP_FILE}"
   logInfo "MySQL dump completed for all databases"
 else
   logInfo "MySQL dump starting for '${MYSQLDUMP_DATABASES}' database(s)"
-  mysqldump ${MYSQL_HOST_OPTS} ${MYSQLDUMP_OPTIONS} ${MYSQLDUMP_ADD_OPTIONS} --databases ${MYSQLDUMP_DATABASES} > ${MYSQLDUMP_FILE}
+  mysqldump ${MYSQL_HOST_OPTS} ${MYSQLDUMP_OPTIONS} ${MYSQLDUMP_ADD_OPTIONS} --databases ${MYSQLDUMP_DATABASES} > "${MYSQLDUMP_FILE}"
   logInfo "MySQL dump completed for '${MYSQLDUMP_DATABASES}' database(s)"
 fi
+
+# the dump is complete, so it survives a later failure of another stage
+clearFailureCleanupFile "${MYSQLDUMP_FILE}"
 
 readonly __DBBACKUP_FILE_NAME="${MYSQLDUMP_FILE_NAME}"
 readonly __DBBACKUP_FILE_PATH="${MYSQLDUMP_FILE_PATH}"
@@ -62,3 +76,6 @@ readonly __DBBACKUP_FILE="${MYSQLDUMP_FILE}"
 __BACKUP_FILE_NAME="${MYSQLDUMP_FILE_NAME}"
 __BACKUP_FILE_PATH="${MYSQLDUMP_FILE_PATH}"
 __BACKUP_FILE="${MYSQLDUMP_FILE}"
+__BACKUP_FILE_PATTERN="*.${MYSQLDUMP_FILENAME}.sql*"
+__BACKUP_DATABASE_HOST="${MYSQL_HOST}"
+__BACKUP_DATABASES="${MYSQLDUMP_DATABASES}"
