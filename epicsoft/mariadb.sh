@@ -5,6 +5,8 @@ readonly MARIADBDUMP_FILE_NAME="${MARIADBDUMP_START_TIME}.${MARIADBDUMP_FILENAME
 readonly MARIADBDUMP_FILE_PATH="${WORKING_DIR}"
 readonly MARIADBDUMP_FILE="${MARIADBDUMP_FILE_PATH}/${MARIADBDUMP_FILE_NAME}"
 
+readSecretFile "MARIADB_PASSWORD"
+
 if [ -z "${MARIADB_HOST}" ]; then
   logError "You need to set the 'MARIADB_HOST' environment variable."
   exit 1

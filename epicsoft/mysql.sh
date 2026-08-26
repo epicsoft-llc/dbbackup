@@ -5,6 +5,8 @@ readonly MYSQLDUMP_FILE_NAME="${MYSQLDUMP_START_TIME}.${MYSQLDUMP_FILENAME}.sql"
 readonly MYSQLDUMP_FILE_PATH="${WORKING_DIR}"
 readonly MYSQLDUMP_FILE="${MYSQLDUMP_FILE_PATH}/${MYSQLDUMP_FILE_NAME}"
 
+readSecretFile "MYSQL_PASSWORD"
+
 if [ -z "${MYSQL_HOST}" ]; then
   logError "You need to set the 'MYSQL_HOST' environment variable."
   exit 1

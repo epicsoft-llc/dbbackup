@@ -1,5 +1,8 @@
 #!/bin/bash
 
+readSecretFile "S3_ACCESS_KEY"
+readSecretFile "S3_SECRET_KEY"
+
 if [ -z "${S3_ACCESS_KEY}" ]; then
   logError "You need to set the 'S3_ACCESS_KEY' environment variable."
   exit 1

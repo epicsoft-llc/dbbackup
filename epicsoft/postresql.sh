@@ -6,6 +6,8 @@ readonly PGSQLDUMP_FILE_PATH="${WORKING_DIR}"
 readonly PGSQLDUMP_FILE="${PGSQLDUMP_FILE_PATH}/${PGSQLDUMP_FILE_NAME}"
 readonly PGSQL_ROOT_PATH="/usr/libexec/postgresql${PGSQL_VERSION}"
 
+readSecretFile "PGSQL_PASSWORD"
+
 if [ -z "${PGSQL_HOST}" ]; then
   logError "You need to set the 'PGSQL_HOST' environment variable."
   exit 1

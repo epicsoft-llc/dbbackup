@@ -4,6 +4,8 @@ readonly COMPRESS_FILE_NAME="${__BACKUP_FILE_NAME}.7z"
 readonly COMPRESS_FILE_PATH="${__BACKUP_FILE_PATH}"
 readonly COMPRESS_FILE="${COMPRESS_FILE_PATH}/${COMPRESS_FILE_NAME}"
 
+readSecretFile "COMPRESS_ENCRYPTION_PASSWORD"
+
 if [ -z "${COMPRESS_OPTIONS}" ]; then
   logError "You need to set the 'COMPRESS_OPTIONS' environment variable."
   exit 1

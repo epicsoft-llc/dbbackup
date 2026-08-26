@@ -37,6 +37,19 @@ In cron mode a failing backup does *not* stop the container — the error is log
 
 Use `TZ` to set the timezone the schedule is evaluated in — without it the schedule uses `UTC`.
 
+## Secrets from files
+
+Every password and key can be read from a file instead of an environment variable by appending `_FILE` to the variable name and pointing it at the file. This is meant for [Docker secrets](https://docs.docker.com/engine/swarm/secrets/), Kubernetes secret mounts and comparable mechanisms, so the credential never has to appear in the container configuration.
+
+- `MARIADB_PASSWORD_FILE`
+- `MYSQL_PASSWORD_FILE`
+- `PGSQL_PASSWORD_FILE`
+- `COMPRESS_ENCRYPTION_PASSWORD_FILE`
+- `S3_ACCESS_KEY_FILE`
+- `S3_SECRET_KEY_FILE`
+
+A trailing newline in the file is stripped. Setting a variable and its `_FILE` counterpart at the same time is an error, as is a missing, unreadable or empty file. In cron mode the file is read again on every scheduled run.
+
 ## Versions
 
 `latest` based on `alpine:latest` - build `weekly`
@@ -49,10 +62,10 @@ Use `TZ` to set the timezone the schedule is evaluated in — without it the sch
 - `TZ` timezone the cron schedule is evaluated in, for example `Europe/Berlin` (default: `UTC`)
 - `COMPRESS_ENABLE` enable compression of dump with 7-Zip (default: `false`)
 - `COMPRESS_OPTIONS` 7-Zip arguments for compression (default: `a -t7z -md=20 -m0=lzma2 -mx=9 -mmt=on -aoa`)
-- `COMPRESS_ENCRYPTION_PASSWORD` 7-Zip password for encryption (default: *empty*)
+- `COMPRESS_ENCRYPTION_PASSWORD` 7-Zip password for encryption, or `COMPRESS_ENCRYPTION_PASSWORD_FILE` (default: *empty*)
 - `S3_ENABLE` enable S3 upload (default: `false`)
-- `S3_ACCESS_KEY` your S3 access key ***required***
-- `S3_SECRET_KEY` your S3 secret key ***required***
+- `S3_ACCESS_KEY` your S3 access key, or `S3_ACCESS_KEY_FILE` ***required***
+- `S3_SECRET_KEY` your S3 secret key, or `S3_SECRET_KEY_FILE` ***required***
 - `S3_REGION` S3 bucket region ***required*** (not required for [MinIO](https://minio.io))
 - `S3_BUCKET` your S3 bucket path ***required***
 - `S3_PREFIX` path prefix in your bucket (default: `backup`)
@@ -65,7 +78,7 @@ Use `TZ` to set the timezone the schedule is evaluated in — without it the sch
 - `MARIADB_HOST` database host ***required***
 - `MARIADB_PORT` database port (default: `3306`)
 - `MARIADB_USERNAME` database username ***required***
-- `MARIADB_PASSWORD` database password ***required***
+- `MARIADB_PASSWORD` database password, or `MARIADB_PASSWORD_FILE` ***required***
 - `MARIADBDUMP_OPTIONS` dump options (default: `--verbose --hex-blob --quote-names --quick --add-drop-table --add-locks --create-options --allow-keywords --disable-keys --extended-insert --single-transaction --comments --no-tablespaces`)
 - `MARIADBDUMP_ADD_OPTIONS` additional dump options (default: *empty*)
 - `MARIADBDUMP_DATABASES` list of databases to backup (default: `--all-databases`)
@@ -76,7 +89,7 @@ Use `TZ` to set the timezone the schedule is evaluated in — without it the sch
 - `MYSQL_HOST` database host ***required***
 - `MYSQL_PORT` database port (default: `3306`)
 - `MYSQL_USERNAME` database username ***required***
-- `MYSQL_PASSWORD` database password ***required***
+- `MYSQL_PASSWORD` database password, or `MYSQL_PASSWORD_FILE` ***required***
 - `MYSQLDUMP_OPTIONS` dump options (default: `--verbose --hex-blob --quote-names --quick --add-drop-table --add-locks --create-options --allow-keywords --disable-keys --extended-insert --single-transaction --comments --no-tablespaces`)
 - `MYSQLDUMP_ADD_OPTIONS` additional dump options (default: *empty*)
 - `MYSQLDUMP_DATABASES` list of databases to backup (default: `--all-databases`)
@@ -87,7 +100,7 @@ Use `TZ` to set the timezone the schedule is evaluated in — without it the sch
 - `PGSQL_HOST` database host ***required***
 - `PGSQL_PORT` database port (default: `5433`)
 - `PGSQL_USERNAME` database username ***required***
-- `PGSQL_PASSWORD` database password ***required***
+- `PGSQL_PASSWORD` database password, or `PGSQL_PASSWORD_FILE` ***required***
 - `PGSQL_OPTIONS` dump options (default: `--verbose`)
 - `PGSQL_DATABASES` list of databases to backup (default: `--all-databases`)
 - `PGSQL_FILENAME` name of backup file (default: `backup`)
@@ -150,6 +163,42 @@ docker run --rm \
   -e COMPRESS_ENCRYPTION_PASSWORD='<COMPRESS-PASSWORD>' \
   -v /tmp:/backup:rw \
   epicsoft/dbbackup:latest
+```
+
+### Read the database password from a file instead of an environment variable
+
+```bash
+docker run --rm \
+  -e BACKUP=mysql \
+  -e MYSQL_HOST=example.com \
+  -e MYSQL_USERNAME=<USERNAME> \
+  -e MYSQL_PASSWORD_FILE=/run/secrets/mysql_password \
+  -v /path/to/mysql_password:/run/secrets/mysql_password:ro \
+  -v /tmp:/backup:rw \
+  epicsoft/dbbackup:latest
+```
+
+With Docker Compose and a secret the same setup looks like this:
+
+```yaml
+services:
+  backup:
+    image: epicsoft/dbbackup:latest
+    environment:
+      BACKUP: mysql
+      MYSQL_HOST: example.com
+      MYSQL_USERNAME: <USERNAME>
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_password
+      CRON_SCHEDULE: "0 3 * * *"
+      TZ: Europe/Berlin
+    secrets:
+      - mysql_password
+    volumes:
+      - /tmp:/backup:rw
+
+secrets:
+  mysql_password:
+    file: ./mysql_password.txt
 ```
 
 ### Run permanently and dump a MySQL database every night at 03:00
