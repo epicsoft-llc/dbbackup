@@ -52,4 +52,12 @@ else
   logInfo "S3 upload disabled"
 fi
 
+if [ ! -z "${RETENTION_KEEP_LAST}" ] || [ ! -z "${RETENTION_KEEP_DAYS}" ]; then
+  logInfo "Retention starting"
+  source "${SCRIPT_DIR}/retention.sh"
+  logInfo "Retention completed"
+else
+  logInfo "Retention disabled"
+fi
+
 logInfo "Backup completed"

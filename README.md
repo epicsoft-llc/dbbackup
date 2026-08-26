@@ -23,6 +23,7 @@ Features:
 - Compress and encrypt database dump file with [7Zip](https://www.7-zip.org/)
 - Upload database dump file to S3 storage
 - Run the backup on a schedule inside a long running container (cron)
+- Remove old backup files from the working directory (retention)
 
 Working direktory: `/backup`
 
@@ -52,6 +53,19 @@ For MySQL and MariaDB the password is never passed on the command line: the dump
 
 A trailing newline in the file is stripped. Setting a variable and its `_FILE` counterpart at the same time is an error, as is a missing, unreadable or empty file. In cron mode the file is read again on every scheduled run.
 
+## Retention
+
+Old backup files in the working directory can be removed automatically after a successful backup. Two rules are available and both are off by default:
+
+- `RETENTION_KEEP_LAST` keep the given number of newest backups
+- `RETENTION_KEEP_DAYS` keep every backup that is not older than the given number of days
+
+A backup file is removed only if **neither** rule wants to keep it. That makes `RETENTION_KEEP_LAST` a floor under `RETENTION_KEEP_DAYS`: if the backups fail for longer than `RETENTION_KEEP_DAYS`, the last working backups are still kept instead of being deleted for being too old. Using `RETENTION_KEEP_DAYS` without `RETENTION_KEEP_LAST` is possible, but the combination of both is recommended.
+
+The cleanup only ever touches files of this backup in the working directory, that is files matching `*.<FILENAME>.sql*` with the `MARIADBDUMP_FILENAME`, `MYSQLDUMP_FILENAME` or `PGSQL_FILENAME` of the current configuration. Other files in the directory, including backups written with a different filename, are left alone. Empty files left behind by a failed dump are always removed and never count as a backup.
+
+The cleanup runs only after the dump - and if enabled, the upload - succeeded. A failed backup never deletes anything. Files that were already uploaded to S3 are not affected; use the lifecycle rules of the bucket for retention there.
+
 ## Versions
 
 `latest` based on `alpine:latest` - build `weekly`
@@ -62,6 +76,8 @@ A trailing newline in the file is stripped. Setting a variable and its `_FILE` c
 - `CRON_SCHEDULE` cron expression, for example `0 3 * * *` for a daily backup at 03:00. If empty the container creates one backup and exits (default: *empty*)
 - `CRON_RUN_ON_START` create a backup immediately when the container starts, additionally to the schedule (default: `false`)
 - `TZ` timezone the cron schedule is evaluated in, for example `Europe/Berlin` (default: `UTC`)
+- `RETENTION_KEEP_LAST` number of newest backups to keep in the working directory. If empty this rule is not applied (default: *empty*)
+- `RETENTION_KEEP_DAYS` keep backups in the working directory that are not older than this number of days. If empty this rule is not applied (default: *empty*)
 - `COMPRESS_ENABLE` enable compression of dump with 7-Zip (default: `false`)
 - `COMPRESS_OPTIONS` 7-Zip arguments for compression (default: `a -t7z -md=20 -m0=lzma2 -mx=9 -mmt=on -aoa`)
 - `COMPRESS_ENCRYPTION_PASSWORD` 7-Zip password for encryption, or `COMPRESS_ENCRYPTION_PASSWORD_FILE` (default: *empty*)
@@ -96,6 +112,12 @@ A trailing newline in the file is stripped. Setting a variable and its `_FILE` c
 - `MYSQLDUMP_ADD_OPTIONS` additional dump options (default: *empty*)
 - `MYSQLDUMP_DATABASES` list of databases to backup (default: `--all-databases`)
 - `MYSQLDUMP_FILENAME` name of backup file (default: `backup`)
+
+Connecting to MySQL 8.4 and newer fails with `TLS/SSL error: self-signed certificate in certificate chain`, because the client verifies the self-signed certificate the server creates on first start. Either install a certificate the client trusts on the server, or switch the verification off:
+
+```
+MYSQLDUMP_ADD_OPTIONS=--ssl-verify-server-cert=0
+```
 
 ***only if `BACKUP` is `pgsql`***
 
