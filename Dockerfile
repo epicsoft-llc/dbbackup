@@ -42,7 +42,7 @@ ENV MYSQLDUMP_ADD_OPTIONS=""
 ENV MYSQLDUMP_DATABASES="--all-databases"
 ENV MYSQLDUMP_FILENAME="backup"
 ENV PGSQL_HOST=""
-ENV PGSQL_PORT="5433"
+ENV PGSQL_PORT="5432"
 ENV PGSQL_USERNAME=""
 ENV PGSQL_PASSWORD=""
 ENV PGSQL_PASSWORD_FILE=""
@@ -50,6 +50,11 @@ ENV PGSQL_OPTIONS="--verbose"
 ENV PGSQL_DATABASES="--all-databases"
 ENV PGSQL_FILENAME="backup"
 ENV PGSQL_VERSION="17"
+ENV WEBHOOK_METHOD="GET"
+ENV WEBHOOK_SUCCESS_URL=""
+ENV WEBHOOK_SUCCESS_URL_FILE=""
+ENV WEBHOOK_FAILURE_URL=""
+ENV WEBHOOK_FAILURE_URL_FILE=""
 ENV RETENTION_KEEP_LAST=""
 ENV RETENTION_KEEP_DAYS=""
 ENV COMPRESS_ENABLE="false"
@@ -75,6 +80,7 @@ RUN apk --no-cache add bash \
                        postgresql17-client \
                        postgresql18-client \
                        aws-cli \
+                       curl \
                        tzdata \
                        p7zip \
                        ca-certificates \

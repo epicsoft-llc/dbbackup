@@ -45,7 +45,7 @@ fi
 # the password is passed in an option file instead of on the command line, where any
 # process in the container - and 'docker top' on the host - would be able to read it
 readonly MARIADB_DEFAULTS_FILE="$(mktemp)"
-trap 'rm -f "${MARIADB_DEFAULTS_FILE}"' EXIT
+registerCleanupFile "${MARIADB_DEFAULTS_FILE}"
 chmod 0600 "${MARIADB_DEFAULTS_FILE}"
 writeClientPasswordFile "${MARIADB_DEFAULTS_FILE}" "${MARIADB_PASSWORD}"
 
@@ -72,3 +72,5 @@ __BACKUP_FILE_NAME="${MARIADBDUMP_FILE_NAME}"
 __BACKUP_FILE_PATH="${MARIADBDUMP_FILE_PATH}"
 __BACKUP_FILE="${MARIADBDUMP_FILE}"
 __BACKUP_FILE_PATTERN="*.${MARIADBDUMP_FILENAME}.sql*"
+__BACKUP_DATABASE_HOST="${MARIADB_HOST}"
+__BACKUP_DATABASES="${MARIADBDUMP_DATABASES}"

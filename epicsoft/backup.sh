@@ -7,6 +7,80 @@ readonly WORKING_DIR="/backup"
 
 source "${SCRIPT_DIR}/utils.sh"
 
+readonly BACKUP_START_EPOCH="$(date +%s)"
+readonly BACKUP_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# the stages fill these in as they go, so whatever is known at the time of the
+# notification is reported - on a failure that can be nothing at all
+__BACKUP_TYPE=""
+__BACKUP_DATABASE_HOST=""
+__BACKUP_DATABASES=""
+__BACKUP_COMPRESSED="false"
+__BACKUP_S3_TARGET=""
+
+buildWebhookBody() {
+  local _STATUS=${1}
+  local _CODE=${2}
+  local _SIZE=""
+
+  if [ ! -z "${__BACKUP_FILE}" ] && [ -f "${__BACKUP_FILE}" ]; then
+    _SIZE="$(stat -c %s "${__BACKUP_FILE}")"
+  fi
+
+  printf '{"status":%s,"backup":%s,"hostname":%s,"database_host":%s,"databases":%s,"started_at":%s,"finished_at":%s,"duration_seconds":%s,"exit_code":%s,"file_name":%s,"file_path":%s,"file_size":%s,"compressed":%s,"s3_target":%s}' \
+    "$(jsonValue "${_STATUS}")" \
+    "$(jsonValue "${__BACKUP_TYPE}")" \
+    "$(jsonValue "$(hostname)")" \
+    "$(jsonValue "${__BACKUP_DATABASE_HOST}")" \
+    "$(jsonValue "${__BACKUP_DATABASES}")" \
+    "$(jsonValue "${BACKUP_STARTED_AT}")" \
+    "$(jsonValue "$(date -u +%Y-%m-%dT%H:%M:%SZ)")" \
+    "$(jsonNumber "$(($(date +%s) - BACKUP_START_EPOCH))")" \
+    "$(jsonNumber "${_CODE}")" \
+    "$(jsonValue "${__BACKUP_FILE_NAME}")" \
+    "$(jsonValue "${__BACKUP_FILE_PATH}")" \
+    "$(jsonNumber "${_SIZE}")" \
+    "${__BACKUP_COMPRESSED}" \
+    "$(jsonValue "${__BACKUP_S3_TARGET}")"
+}
+
+# a failing stage exits the whole script, so the notification has to hang off EXIT -
+# that is the only place that sees a validation error, a broken dump and a good run alike
+onBackupExit() {
+  local _CODE=${1}
+  local _STATUS="success"
+  local _URL="${WEBHOOK_SUCCESS_URL}"
+
+  removeCleanupFiles
+
+  if [ ${_CODE} != 0 ]; then
+    _STATUS="failure"
+    _URL="${WEBHOOK_FAILURE_URL}"
+  fi
+
+  if [ -z "${_URL}" ]; then
+    return 0
+  fi
+
+  callWebhook "${_URL}" "${_STATUS}" "${WEBHOOK_METHOD}" "$(buildWebhookBody "${_STATUS}" "${_CODE}")"
+}
+
+readSecretFile "WEBHOOK_SUCCESS_URL"
+readSecretFile "WEBHOOK_FAILURE_URL"
+
+if [ -z "${WEBHOOK_METHOD}" ]; then
+  WEBHOOK_METHOD="GET"
+fi
+
+WEBHOOK_METHOD="$(echo ${WEBHOOK_METHOD} | tr '[:lower:]' '[:upper:]')"
+
+if [ "${WEBHOOK_METHOD}" != "GET" ] && [ "${WEBHOOK_METHOD}" != "POST" ]; then
+  logError "'WEBHOOK_METHOD' must be 'GET' or 'POST'."
+  exit 1
+fi
+
+trap 'onBackupExit $?' EXIT
+
 logInfo "Backup starting"
 
 if [ -z "${BACKUP}" ]; then
@@ -17,16 +91,19 @@ fi
 case ${BACKUP} in
   "MySQL" | "MYSQL" | "mysql" | "MY" | "my" )
     logInfo "MySQL backup starting"
+    __BACKUP_TYPE="mysql"
     source "${SCRIPT_DIR}/mysql.sh"
     logInfo "MySQL backup completed"
     ;;
   "MariaDB" | "MARIADB" | "mariadb" | "MARIA" | "maria" )
     logInfo "MariaDB backup starting"
+    __BACKUP_TYPE="mariadb"
     source "${SCRIPT_DIR}/mariadb.sh"
     logInfo "MariaDB backup completed"
     ;;
   "PostgreSQL" | "POSTGRESQL" | "postgresql" | "POSTGRES" | "postgres" | "PSQL" | "psql" | "PGSQL" | "pgsql" )
     logInfo "PostgreSQL backup starting"
+    __BACKUP_TYPE="pgsql"
     source "${SCRIPT_DIR}/postresql.sh"
     logInfo "PostgreSQL backup completed"
     ;;

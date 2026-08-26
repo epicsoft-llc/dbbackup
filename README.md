@@ -24,6 +24,7 @@ Features:
 - Upload database dump file to S3 storage
 - Run the backup on a schedule inside a long running container (cron)
 - Remove old backup files from the working directory (retention)
+- Call a webhook after a successful or a failed backup
 
 Working direktory: `/backup`
 
@@ -66,6 +67,55 @@ The cleanup only ever touches files of this backup in the working directory, tha
 
 The cleanup runs only after the dump - and if enabled, the upload - succeeded. A failed backup never deletes anything. Files that were already uploaded to S3 are not affected; use the lifecycle rules of the bucket for retention there.
 
+## Webhooks
+
+Two independent URLs can be called when a backup run ends:
+
+- `WEBHOOK_SUCCESS_URL` is called after a run that completed without an error
+- `WEBHOOK_FAILURE_URL` is called after a run that failed anywhere - a missing configuration value, a failing dump, a failing compression or a failing upload
+
+The URL is used exactly as given, so they can point at two different endpoints or at the same endpoint with different query parameters:
+
+```bash
+docker run --rm \
+  -e BACKUP=mysql \
+  -e MYSQL_HOST=example.com \
+  -e MYSQL_USERNAME=<USERNAME> \
+  -e MYSQL_PASSWORD='<PASSWORD>' \
+  -e WEBHOOK_SUCCESS_URL='https://example.com/hook?job=nightly&status=ok' \
+  -e WEBHOOK_FAILURE_URL='https://example.com/hook?job=nightly&status=failed' \
+  -v /tmp:/backup:rw \
+  epicsoft/dbbackup:latest
+```
+
+`WEBHOOK_METHOD` selects how they are called and applies to both:
+
+- `GET` (default) calls the URL and sends nothing else
+- `POST` sends a JSON body describing the run, with `Content-Type: application/json`
+
+```json
+{
+  "status": "success",
+  "backup": "mariadb",
+  "hostname": "0548b1cc0fa7",
+  "database_host": "db.example.com",
+  "databases": "demo",
+  "started_at": "2026-08-26T05:14:28Z",
+  "finished_at": "2026-08-26T05:14:31Z",
+  "duration_seconds": 3,
+  "exit_code": 0,
+  "file_name": "20260826-051428.backup.sql.7z",
+  "file_path": "/backup",
+  "file_size": 817,
+  "compressed": true,
+  "s3_target": "s3://backups/nightly/20260826-051428.backup.sql.7z"
+}
+```
+
+The body never contains a password, a key or a token. Every field that is not known yet is sent as `null`, which is what most fields look like when the run failed before the dump started. `status` is `success` or `failure` and `exit_code` is the exit code of the backup.
+
+A webhook that cannot be reached or that answers with anything other than `2xx` is logged as a warning and does not turn a successful backup into a failed one. Each call waits at most 10 seconds and is retried twice. Because a webhook URL often contains a token, `WEBHOOK_SUCCESS_URL_FILE` and `WEBHOOK_FAILURE_URL_FILE` are available as well.
+
 ## Versions
 
 `latest` based on `alpine:latest` - build `weekly`
@@ -76,6 +126,9 @@ The cleanup runs only after the dump - and if enabled, the upload - succeeded. A
 - `CRON_SCHEDULE` cron expression, for example `0 3 * * *` for a daily backup at 03:00. If empty the container creates one backup and exits (default: *empty*)
 - `CRON_RUN_ON_START` create a backup immediately when the container starts, additionally to the schedule (default: `false`)
 - `TZ` timezone the cron schedule is evaluated in, for example `Europe/Berlin` (default: `UTC`)
+- `WEBHOOK_METHOD` how the webhooks are called, `GET` or `POST` (default: `GET`)
+- `WEBHOOK_SUCCESS_URL` URL to call after a successful backup, or `WEBHOOK_SUCCESS_URL_FILE` (default: *empty*)
+- `WEBHOOK_FAILURE_URL` URL to call after a failed backup, or `WEBHOOK_FAILURE_URL_FILE` (default: *empty*)
 - `RETENTION_KEEP_LAST` number of newest backups to keep in the working directory. If empty this rule is not applied (default: *empty*)
 - `RETENTION_KEEP_DAYS` keep backups in the working directory that are not older than this number of days. If empty this rule is not applied (default: *empty*)
 - `COMPRESS_ENABLE` enable compression of dump with 7-Zip (default: `false`)
@@ -122,7 +175,7 @@ MYSQLDUMP_ADD_OPTIONS=--ssl-verify-server-cert=0
 ***only if `BACKUP` is `pgsql`***
 
 - `PGSQL_HOST` database host ***required***
-- `PGSQL_PORT` database port (default: `5433`)
+- `PGSQL_PORT` database port (default: `5432`)
 - `PGSQL_USERNAME` database username ***required***
 - `PGSQL_PASSWORD` database password, or `PGSQL_PASSWORD_FILE` ***required***
 - `PGSQL_OPTIONS` dump options (default: `--verbose`)
@@ -141,6 +194,7 @@ Alpine packages are installed in the current image in the latest version - https
 - postgresql17-client
 - postgresql18-client
 - aws-cli
+- curl
 - p7zip
 - tzdata
 - ca-certificates

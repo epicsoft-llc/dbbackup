@@ -45,7 +45,7 @@ fi
 # the password is passed in an option file instead of on the command line, where any
 # process in the container - and 'docker top' on the host - would be able to read it
 readonly MYSQL_DEFAULTS_FILE="$(mktemp)"
-trap 'rm -f "${MYSQL_DEFAULTS_FILE}"' EXIT
+registerCleanupFile "${MYSQL_DEFAULTS_FILE}"
 chmod 0600 "${MYSQL_DEFAULTS_FILE}"
 writeClientPasswordFile "${MYSQL_DEFAULTS_FILE}" "${MYSQL_PASSWORD}"
 
@@ -72,3 +72,5 @@ __BACKUP_FILE_NAME="${MYSQLDUMP_FILE_NAME}"
 __BACKUP_FILE_PATH="${MYSQLDUMP_FILE_PATH}"
 __BACKUP_FILE="${MYSQLDUMP_FILE}"
 __BACKUP_FILE_PATTERN="*.${MYSQLDUMP_FILENAME}.sql*"
+__BACKUP_DATABASE_HOST="${MYSQL_HOST}"
+__BACKUP_DATABASES="${MYSQLDUMP_DATABASES}"

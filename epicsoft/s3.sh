@@ -49,6 +49,8 @@ echo "Uploading '${S3_FILE_NAME}' on S3 ..."
 aws s3 cp ${__BACKUP_FILE} s3://${S3_BUCKET}${S3_FILE_PATH}${S3_FILE_NAME} ${S3_ARGUMENTS}
 S3_RESULT=$?
 
+__BACKUP_S3_TARGET="s3://${S3_BUCKET}${S3_FILE_PATH}${S3_FILE_NAME}"
+
 if [ ${S3_RESULT} != 0 ]; then
   logError "S3 upload '${S3_FILE_NAME}' on S3 (code: ${S3_RESULT})"
   exit 1
