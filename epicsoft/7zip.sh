@@ -12,20 +12,30 @@ if [ -z "${COMPRESS_OPTIONS}" ]; then
 fi
 
 COMPRESS_ARGUMENTS="${COMPRESS_OPTIONS}"
+COMPRESS_ENCRYPTED="false"
+
 if [ ! -z "${COMPRESS_ENCRYPTION_PASSWORD}" ]; then
-  COMPRESS_ARGUMENTS="${COMPRESS_ARGUMENTS} -mhe -p${COMPRESS_ENCRYPTION_PASSWORD} "
-  __BACKUP_ENCRYPTED="true"
+  # p7zip has no password file option, but '-p' without a value makes it read the
+  # password from stdin - that keeps it out of the process list and out of 'docker top'
+  COMPRESS_ARGUMENTS="${COMPRESS_ARGUMENTS} -mhe -p"
+  COMPRESS_ENCRYPTED="true"
 fi
 
 registerFailureCleanupFile "${COMPRESS_FILE}"
 
-7z ${COMPRESS_ARGUMENTS} ${COMPRESS_FILE} ${__BACKUP_FILE}
+if [ "${COMPRESS_ENCRYPTED}" == "true" ]; then
+  printf '%s\n' "${COMPRESS_ENCRYPTION_PASSWORD}" | 7z ${COMPRESS_ARGUMENTS} "${COMPRESS_FILE}" "${__BACKUP_FILE}"
+else
+  7z ${COMPRESS_ARGUMENTS} "${COMPRESS_FILE}" "${__BACKUP_FILE}"
+fi
 
-clearFailureCleanupFiles
+# the archive is complete, so it survives a later failure of another stage
+clearFailureCleanupFile "${COMPRESS_FILE}"
 
-rm -rf ${__BACKUP_FILE}
+rm -rf "${__BACKUP_FILE}"
 
 __BACKUP_FILE_NAME="${COMPRESS_FILE_NAME}"
 __BACKUP_FILE_PATH="${COMPRESS_FILE_PATH}"
 __BACKUP_FILE="${COMPRESS_FILE}"
 __BACKUP_COMPRESSED="true"
+__BACKUP_ENCRYPTED="${COMPRESS_ENCRYPTED}"

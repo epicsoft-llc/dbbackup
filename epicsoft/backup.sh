@@ -75,7 +75,7 @@ if [ -z "${WEBHOOK_METHOD}" ]; then
   WEBHOOK_METHOD="GET"
 fi
 
-WEBHOOK_METHOD="$(echo ${WEBHOOK_METHOD} | tr '[:lower:]' '[:upper:]')"
+WEBHOOK_METHOD="$(echo "${WEBHOOK_METHOD}" | tr '[:lower:]' '[:upper:]')"
 
 if [ "${WEBHOOK_METHOD}" != "GET" ] && [ "${WEBHOOK_METHOD}" != "POST" ]; then
   logError "'WEBHOOK_METHOD' must be 'GET' or 'POST'."
@@ -83,6 +83,11 @@ if [ "${WEBHOOK_METHOD}" != "GET" ] && [ "${WEBHOOK_METHOD}" != "POST" ]; then
 fi
 
 trap 'onBackupExit $?' EXIT
+
+# bash would die on a signal without running the EXIT handler, so route the usual
+# shutdown signals through a normal exit
+trap 'exit 143' TERM
+trap 'exit 130' INT
 
 logInfo "Backup starting"
 
@@ -116,7 +121,7 @@ case ${BACKUP} in
     ;;
 esac
 
-if [ ! -z "$(echo ${COMPRESS_ENABLE} | grep -i -E "(y|yes|true|1)")" ]; then
+if [ ! -z "$(echo "${COMPRESS_ENABLE}" | grep -i -E "(y|yes|true|1)")" ]; then
   logInfo "Compress starting"
   source "${SCRIPT_DIR}/7zip.sh"
   logInfo "Compress completed"
@@ -124,7 +129,7 @@ else
   logInfo "Compress disabled"
 fi
 
-if [ ! -z "$(echo ${S3_ENABLE} | grep -i -E "(y|yes|true|1)")" ]; then
+if [ ! -z "$(echo "${S3_ENABLE}" | grep -i -E "(y|yes|true|1)")" ]; then
   logInfo "S3 upload starting"
   source "${SCRIPT_DIR}/s3.sh"
   logInfo "S3 upload completed"

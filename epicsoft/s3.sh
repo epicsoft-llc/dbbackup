@@ -41,7 +41,7 @@ if [ ! -z "${S3_ENDPOINT}" ]; then
   S3_ARGUMENTS="${S3_ARGUMENTS} --endpoint-url https://${S3_ENDPOINT}"
 fi
 
-if [ ! -z "$(echo ${S3_S3V4} | grep -i -E "(y|yes|true|1)")" ]; then
+if [ ! -z "$(echo "${S3_S3V4}" | grep -i -E "(y|yes|true|1)")" ]; then
   aws configure set default.s3.signature_version s3v4
 fi
 

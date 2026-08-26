@@ -51,8 +51,18 @@ registerFailureCleanupFile() {
   __FAILURE_CLEANUP_FILES+=("${1}")
 }
 
-clearFailureCleanupFiles() {
-  __FAILURE_CLEANUP_FILES=()
+# releases exactly <FILE> again, so one stage can never drop the registration of another
+clearFailureCleanupFile() {
+  local _KEEP=()
+  local _FILE
+
+  for _FILE in "${__FAILURE_CLEANUP_FILES[@]}"; do
+    if [ "${_FILE}" != "${1}" ]; then
+      _KEEP+=("${_FILE}")
+    fi
+  done
+
+  __FAILURE_CLEANUP_FILES=("${_KEEP[@]}")
 }
 
 removeFailureCleanupFiles() {
@@ -89,7 +99,7 @@ jsonValue() {
 jsonNumber() {
   local _VALUE=${1}
 
-  if [ -z "$(echo ${_VALUE} | grep -E '^-?[0-9]+$')" ]; then
+  if [ -z "$(echo "${_VALUE}" | grep -E '^-?[0-9]+$')" ]; then
     printf 'null'
     return 0
   fi
@@ -125,7 +135,7 @@ callWebhook() {
     return 0
   fi
 
-  if [ -z "$(echo ${_HTTP_CODE} | grep -E '^2[0-9][0-9]$')" ]; then
+  if [ -z "$(echo "${_HTTP_CODE}" | grep -E '^2[0-9][0-9]$')" ]; then
     logWarn "The ${_NAME} webhook answered with HTTP ${_HTTP_CODE}"
     return 0
   fi

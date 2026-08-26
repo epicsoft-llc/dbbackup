@@ -5,13 +5,13 @@ if [ -z "${__BACKUP_FILE_PATTERN}" ]; then
   exit 1
 fi
 
-if [ ! -z "${RETENTION_KEEP_LAST}" ] && [ -z "$(echo ${RETENTION_KEEP_LAST} | grep -E '^[0-9]+$')" ]; then
-  logError "'RETENTION_KEEP_LAST' must be a positive number."
+if [ ! -z "${RETENTION_KEEP_LAST}" ] && [ -z "$(echo "${RETENTION_KEEP_LAST}" | grep -E '^[0-9]+$')" ]; then
+  logError "'RETENTION_KEEP_LAST' must be a whole number."
   exit 1
 fi
 
-if [ ! -z "${RETENTION_KEEP_DAYS}" ] && [ -z "$(echo ${RETENTION_KEEP_DAYS} | grep -E '^[0-9]+$')" ]; then
-  logError "'RETENTION_KEEP_DAYS' must be a positive number."
+if [ ! -z "${RETENTION_KEEP_DAYS}" ] && [ -z "$(echo "${RETENTION_KEEP_DAYS}" | grep -E '^[0-9]+$')" ]; then
+  logError "'RETENTION_KEEP_DAYS' must be a whole number."
   exit 1
 fi
 

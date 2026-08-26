@@ -51,23 +51,23 @@ writeClientPasswordFile "${MARIADB_DEFAULTS_FILE}" "${MARIADB_PASSWORD}"
 
 MARIADB_HOST_OPTS="--defaults-extra-file=${MARIADB_DEFAULTS_FILE} --host=${MARIADB_HOST} --port=${MARIADB_PORT} --user=${MARIADB_USERNAME}"
 
-mkdir -p ${MARIADBDUMP_FILE_PATH}
-rm -rf ${MARIADBDUMP_FILE}
+mkdir -p "${MARIADBDUMP_FILE_PATH}"
+rm -rf "${MARIADBDUMP_FILE}"
 
 registerFailureCleanupFile "${MARIADBDUMP_FILE}"
 
 if [ "${MARIADBDUMP_DATABASES}" == "--all-databases" ]; then
   logInfo "MariaDB dump starting for all database(s)"
-  mariadb-dump ${MARIADB_HOST_OPTS} ${MARIADBDUMP_OPTIONS} ${MARIADBDUMP_ADD_OPTIONS} --all-databases > ${MARIADBDUMP_FILE}
+  mariadb-dump ${MARIADB_HOST_OPTS} ${MARIADBDUMP_OPTIONS} ${MARIADBDUMP_ADD_OPTIONS} --all-databases > "${MARIADBDUMP_FILE}"
   logInfo "MariaDB dump completed for all database(s)"
 else
   logInfo "MariaDB dump starting for '${MARIADBDUMP_DATABASES}' databases"
-  mariadb-dump ${MARIADB_HOST_OPTS} ${MARIADBDUMP_OPTIONS} ${MARIADBDUMP_ADD_OPTIONS} --databases ${MARIADBDUMP_DATABASES} > ${MARIADBDUMP_FILE}
+  mariadb-dump ${MARIADB_HOST_OPTS} ${MARIADBDUMP_OPTIONS} ${MARIADBDUMP_ADD_OPTIONS} --databases ${MARIADBDUMP_DATABASES} > "${MARIADBDUMP_FILE}"
   logInfo "MariaDB dump completed for '${MARIADBDUMP_DATABASES}' databases"
 fi
 
 # the dump is complete, so it survives a later failure of another stage
-clearFailureCleanupFiles
+clearFailureCleanupFile "${MARIADBDUMP_FILE}"
 
 readonly __DBBACKUP_FILE_NAME="${MARIADBDUMP_FILE_NAME}"
 readonly __DBBACKUP_FILE_PATH="${MARIADBDUMP_FILE_PATH}"

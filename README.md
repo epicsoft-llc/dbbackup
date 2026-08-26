@@ -50,7 +50,7 @@ Every password and key can be read from a file instead of an environment variabl
 - `S3_ACCESS_KEY_FILE`
 - `S3_SECRET_KEY_FILE`
 
-For MySQL and MariaDB the password is never passed on the command line: the dump is started with a `--defaults-extra-file` that is created at runtime with mode 0600 and removed again when the backup ends. That way the password is not visible in the process list of the container or in `docker top` on the host. For PostgreSQL the password is handed over in `PGPASSWORD` and is not visible there either.
+No password is passed on the command line, where it would be readable for every process in the container and through `docker top` on the host. For MySQL and MariaDB the dump is started with the dump is started with a `--defaults-extra-file` that is created at runtime with mode 0600 and removed again when the backup ends. That way the password is not visible in the process list of the container or in `docker top` on the host. For PostgreSQL the password is handed over in `PGPASSWORD`, and 7-Zip reads its encryption password from stdin - neither is visible there either.
 
 A trailing newline in the file is stripped. Setting a variable and its `_FILE` counterpart at the same time is an error, as is a missing, unreadable or empty file. In cron mode the file is read again on every scheduled run.
 
@@ -126,7 +126,7 @@ A webhook that cannot be reached or that answers with anything other than `2xx` 
 ## Environment variables
 
 - `BACKUP` type of database backup, one of `mysql`, `mariadb`, `pgsql` ***required*** 
-- `CRON_SCHEDULE` cron expression, for example `0 3 * * *` for a daily backup at 03:00. If empty the container creates one backup and exits (default: *empty*)
+- `CRON_SCHEDULE` cron expression with 5 fields, for example `0 3 * * *` for a daily backup at 03:00, or a keyword such as `@daily`. A schedule that is not usable is rejected on start instead of silently never running. If empty the container creates one backup and exits (default: *empty*)
 - `CRON_RUN_ON_START` create a backup immediately when the container starts, additionally to the schedule (default: `false`)
 - `TZ` timezone the cron schedule is evaluated in, for example `Europe/Berlin` (default: `UTC`)
 - `WEBHOOK_METHOD` how the webhooks are called, `GET` or `POST` (default: `GET`)
