@@ -16,10 +16,13 @@ LABEL image.name="epicsoft_dbbackup" \
       maintainer="epicsoft LLC" \
       maintainer.name="Alexander Schwarz <as@epicsoft.one>" \
       maintainer.url="https://epicsoft.one/" \
-      maintainer.copyright="Copyright 2024 epicsoft LLC / Alexander Schwarz" \
+      maintainer.copyright="Copyright 2024-2026 epicsoft LLC / Alexander Schwarz" \
       license="MIT"
 
 ENV BACKUP=""
+ENV TZ="UTC"
+ENV CRON_SCHEDULE=""
+ENV CRON_RUN_ON_START="false"
 ENV MARIADB_HOST=""
 ENV MARIADB_PORT="3306"
 ENV MARIADB_USERNAME=""
@@ -64,6 +67,7 @@ RUN apk --no-cache add bash \
                        postgresql17-client \
                        postgresql18-client \
                        aws-cli \
+                       tzdata \
                        p7zip \
                        ca-certificates \
  && update-ca-certificates \
@@ -72,4 +76,4 @@ RUN apk --no-cache add bash \
 ADD epicsoft epicsoft
 RUN chmod +x /epicsoft/*.sh
 
-CMD [ "bash", "epicsoft/backup.sh" ]
+CMD [ "bash", "epicsoft/entrypoint.sh" ]

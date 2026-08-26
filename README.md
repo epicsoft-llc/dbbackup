@@ -22,8 +22,20 @@ Features:
 - Create [PostgreSQL](https://www.postgresql.org/) database dump 
 - Compress and encrypt database dump file with [7Zip](https://www.7-zip.org/)
 - Upload database dump file to S3 storage
+- Run the backup on a schedule inside a long running container (cron)
 
 Working direktory: `/backup`
+
+## Modes
+
+The image supports two modes:
+
+- **One-shot** (default): the container creates one backup and exits. Use this when an external scheduler (host cron, Kubernetes CronJob, CI pipeline, ...) starts the container.
+- **Cron**: set `CRON_SCHEDULE` to a cron expression and the container stays running and creates the backups itself.
+
+In cron mode a failing backup does *not* stop the container — the error is logged and the next scheduled run is executed as usual. If a backup is still running when the next run is due, that run is skipped with a warning instead of running twice in parallel. All output of the scheduled backups is written to the container log (`docker logs`).
+
+Use `TZ` to set the timezone the schedule is evaluated in — without it the schedule uses `UTC`.
 
 ## Versions
 
@@ -32,6 +44,9 @@ Working direktory: `/backup`
 ## Environment variables
 
 - `BACKUP` type of database backup, one of `mysql`, `mariadb`, `pgsql` ***required*** 
+- `CRON_SCHEDULE` cron expression, for example `0 3 * * *` for a daily backup at 03:00. If empty the container creates one backup and exits (default: *empty*)
+- `CRON_RUN_ON_START` create a backup immediately when the container starts, additionally to the schedule (default: `false`)
+- `TZ` timezone the cron schedule is evaluated in, for example `Europe/Berlin` (default: `UTC`)
 - `COMPRESS_ENABLE` enable compression of dump with 7-Zip (default: `false`)
 - `COMPRESS_OPTIONS` 7-Zip arguments for compression (default: `a -t7z -md=20 -m0=lzma2 -mx=9 -mmt=on -aoa`)
 - `COMPRESS_ENCRYPTION_PASSWORD` 7-Zip password for encryption (default: *empty*)
@@ -90,6 +105,7 @@ Alpine packages are installed in the current image in the latest version - https
 - postgresql18-client
 - aws-cli
 - p7zip
+- tzdata
 - ca-certificates
 
 ## Examples
@@ -132,6 +148,20 @@ docker run --rm \
   -e MARIADB_PASSWORD='<PASSWORD>' \
   -e COMPRESS_ENABLE=true \
   -e COMPRESS_ENCRYPTION_PASSWORD='<COMPRESS-PASSWORD>' \
+  -v /tmp:/backup:rw \
+  epicsoft/dbbackup:latest
+```
+
+### Run permanently and dump a MySQL database every night at 03:00
+
+```bash
+docker run -d --restart unless-stopped \
+  -e BACKUP=mysql \
+  -e MYSQL_HOST=example.com \
+  -e MYSQL_USERNAME=<USERNAME> \
+  -e MYSQL_PASSWORD='<PASSWORD>' \
+  -e CRON_SCHEDULE='0 3 * * *' \
+  -e TZ=Europe/Berlin \
   -v /tmp:/backup:rw \
   epicsoft/dbbackup:latest
 ```
