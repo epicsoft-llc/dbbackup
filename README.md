@@ -26,6 +26,7 @@ Features:
 - Remove old backup files from the working directory (retention)
 - Call a webhook after a successful or a failed backup
 - Trigger a backup manually in a running cron container
+- Report an unhealthy container when the backups stop working
 
 Working direktory: `/backup`
 
@@ -51,6 +52,44 @@ docker exec <container> backup-now
 The manual run goes through the same code as a scheduled one - same environment, same lock, same compression, upload, retention and webhooks - and its output appears in the terminal instead of in `docker logs`. It exits with the exit code of the backup, so it can be used in a script or a pipeline. If a scheduled backup happens to be running at that moment, the manual run is skipped with a warning instead of running a second dump in parallel.
 
 `CRON_RUN_ON_START=true` does the same thing once at container start.
+
+## Healthcheck
+
+The image brings its own healthcheck. It does not just look for a running cron daemon - that alone would report a healthy container while every single backup has been failing for weeks. Instead it reports unhealthy when:
+
+- the cron daemon is gone, or
+- the last backup run ended with an error, or
+- `HEALTHCHECK_MAX_AGE` is set and the last successful backup is older than that
+
+The third rule is the one that makes the check worth having, because it is the only one that notices a schedule that quietly stopped firing. Set it a little above the backup interval, so a single late run does not raise a false alarm:
+
+```yaml
+services:
+  backup:
+    image: epicsoft/dbbackup:latest
+    environment:
+      BACKUP: mariadb
+      MARIADB_HOST: db
+      MARIADB_USERNAME: <USERNAME>
+      MARIADB_PASSWORD_FILE: /run/secrets/db_password
+      CRON_SCHEDULE: "0 3 * * *"
+      TZ: Europe/Berlin
+      HEALTHCHECK_MAX_AGE: 26h
+    secrets:
+      - db_password
+    volumes:
+      - ./backups:/backup:rw
+```
+
+`HEALTHCHECK_MAX_AGE` accepts `m` for minutes, `h` for hours and `d` for days; a plain number is read as minutes. Until the first backup has run, the start of the container counts as the reference, so a fresh container is not reported unhealthy before its first run is genuinely overdue. A one-shot container is never reported unhealthy, since there is nothing long running to watch.
+
+The reason for an unhealthy container is shown in `docker inspect`:
+
+```bash
+docker inspect --format '{{json .State.Health}}' <container>
+```
+
+The interval, timeout and retries of the check can be overridden per service with the `healthcheck` key in the compose file.
 
 ## Secrets from files
 
@@ -141,6 +180,7 @@ A webhook that cannot be reached or that answers with anything other than `2xx` 
 - `BACKUP` type of database backup, one of `mysql`, `mariadb`, `pgsql` ***required*** 
 - `CRON_SCHEDULE` cron expression with 5 fields, for example `0 3 * * *` for a daily backup at 03:00, or a keyword such as `@daily`. A schedule that is not usable is rejected on start instead of silently never running. If empty the container creates one backup and exits (default: *empty*)
 - `CRON_RUN_ON_START` create a backup immediately when the container starts, additionally to the schedule (default: `false`)
+- `HEALTHCHECK_MAX_AGE` how old the last successful backup may get before the container is reported unhealthy, for example `26h`. Understands `m`, `h` and `d`, a plain number counts as minutes. If empty the healthcheck only reports a dead cron daemon and a failed run (default: *empty*)
 - `TZ` timezone the cron schedule is evaluated in, for example `Europe/Berlin` (default: `UTC`)
 - `WEBHOOK_METHOD` how the webhooks are called, `GET` or `POST` (default: `GET`)
 - `WEBHOOK_SUCCESS_URL` URL to call after a successful backup, or `WEBHOOK_SUCCESS_URL_FILE` (default: *empty*)

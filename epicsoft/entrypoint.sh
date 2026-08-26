@@ -27,6 +27,8 @@ logInfo "Cron enabled with schedule '${CRON_SCHEDULE}' (timezone: ${TZ:-UTC}, lo
 ( umask 077; export -p > "${CRON_ENV_FILE}" )
 chmod 0600 "${CRON_ENV_FILE}"
 
+date +%s > /tmp/dbbackup.started
+
 mkdir -p "${CRON_DIR}"
 echo "${CRON_SCHEDULE} ${SCRIPT_DIR}/cron.sh > /proc/1/fd/1 2> /proc/1/fd/2" > "${CRON_FILE}"
 chmod 0600 "${CRON_FILE}"

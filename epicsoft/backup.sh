@@ -9,6 +9,7 @@ source "${SCRIPT_DIR}/utils.sh"
 
 readonly BACKUP_START_EPOCH="$(date +%s)"
 readonly BACKUP_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+readonly BACKUP_STATE_FILE="/tmp/dbbackup.state"
 
 # the stages fill these in as they go, so whatever is known at the time of the
 # notification is reported - on a failure that can be nothing at all
@@ -52,6 +53,9 @@ onBackupExit() {
   local _CODE=${1}
   local _STATUS="success"
   local _URL="${WEBHOOK_SUCCESS_URL}"
+
+  # the healthcheck reads this to tell a working container from one that only looks alive
+  echo "$(date +%s) ${_CODE}" > "${BACKUP_STATE_FILE}"
 
   removeCleanupFiles
 

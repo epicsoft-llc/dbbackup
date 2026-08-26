@@ -23,6 +23,7 @@ ENV BACKUP=""
 ENV TZ="UTC"
 ENV CRON_SCHEDULE=""
 ENV CRON_RUN_ON_START="false"
+ENV HEALTHCHECK_MAX_AGE=""
 ENV MARIADB_HOST=""
 ENV MARIADB_PORT="3306"
 ENV MARIADB_USERNAME=""
@@ -90,5 +91,8 @@ RUN apk --no-cache add bash \
 ADD epicsoft epicsoft
 RUN chmod +x /epicsoft/*.sh \
  && ln -s /epicsoft/backup-now.sh /usr/local/bin/backup-now
+
+HEALTHCHECK --interval=5m --timeout=10s --start-period=30s --retries=2 \
+            CMD bash /epicsoft/healthcheck.sh
 
 CMD [ "bash", "epicsoft/entrypoint.sh" ]
