@@ -196,11 +196,6 @@ All tags are based on `alpine:latest` - build `weekly`
 - `CRON_RUN_ON_START` create a backup immediately when the container starts, additionally to the schedule (default: `false`)
 - `HEALTHCHECK_MAX_AGE` how old the last successful backup may get before the container is reported unhealthy, for example `26h`. Understands `m`, `h` and `d`, a plain number counts as minutes. If empty the healthcheck only reports a dead cron daemon and a failed run (default: *empty*)
 - `TZ` timezone the cron schedule is evaluated in, for example `Europe/Berlin` (default: `UTC`)
-- `SQLITE_DATABASE` path to the SQLite database file inside the container, several paths separated by spaces (only with `SQLITE_MODE=dump`) ***required for `BACKUP=sqlite`***
-- `SQLITE_MODE` `backup` uses the built-in online backup and writes a self-contained database file, `dump` writes SQL text (default: `backup`)
-- `SQLITE_FILENAME` name of the backup file, without timestamp and extension (default: `backup`)
-- `SQLITE_INTEGRITY_CHECK` run `PRAGMA integrity_check` and fail the run instead of storing an unusable backup. In `backup` mode the copy is checked, in `dump` mode the source (default: `true`)
-- `SQLITE_REPORT_SIZE` additionally log the compacted size (`VACUUM INTO`) next to the file size. SQLite does not return deleted pages to the file system, so a growing file is not necessarily growing data (default: `false`)
 - `WEBHOOK_METHOD` how the webhooks are called, `GET` or `POST` (default: `GET`)
 - `WEBHOOK_SUCCESS_URL` URL to call after a successful backup, or `WEBHOOK_SUCCESS_URL_FILE` (default: *empty*)
 - `WEBHOOK_FAILURE_URL` URL to call after a failed backup, or `WEBHOOK_FAILURE_URL_FILE` (default: *empty*)
@@ -257,6 +252,14 @@ MYSQLDUMP_ADD_OPTIONS=--ssl-verify-server-cert=0
 - `PGSQL_DATABASES` list of databases to backup (default: `--all-databases`)
 - `PGSQL_FILENAME` name of backup file (default: `backup`)
 - `PGSQL_VERSION` Version number of the pg-client; possible values are `17` and `18` (default: `17`)
+
+***only if `BACKUP` is `sqlite`***
+
+- `SQLITE_DATABASE` path to the SQLite database file inside the container, several paths separated by spaces (only with `SQLITE_MODE=dump`) ***required for `BACKUP=sqlite`***
+- `SQLITE_MODE` `backup` uses the built-in online backup and writes a self-contained database file, `dump` writes SQL text (default: `backup`)
+- `SQLITE_FILENAME` name of the backup file, without timestamp and extension (default: `backup`)
+- `SQLITE_INTEGRITY_CHECK` run `PRAGMA integrity_check` and fail the run instead of storing an unusable backup. In `backup` mode the copy is checked, in `dump` mode the source (default: `true`)
+- `SQLITE_REPORT_SIZE` additionally log the compacted size (`VACUUM INTO`) next to the file size. SQLite does not return deleted pages to the file system, so a growing file is not necessarily growing data (default: `false`)
 
 ## Installed Alpine packages
 
