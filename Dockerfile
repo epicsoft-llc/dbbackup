@@ -51,6 +51,11 @@ ENV PGSQL_OPTIONS="--verbose"
 ENV PGSQL_DATABASES="--all-databases"
 ENV PGSQL_FILENAME="backup"
 ENV PGSQL_VERSION="17"
+ENV SQLITE_DATABASE=""
+ENV SQLITE_MODE="backup"
+ENV SQLITE_FILENAME="backup"
+ENV SQLITE_INTEGRITY_CHECK="true"
+ENV SQLITE_REPORT_SIZE="false"
 ENV WEBHOOK_METHOD="GET"
 ENV WEBHOOK_SUCCESS_URL=""
 ENV WEBHOOK_SUCCESS_URL_FILE=""
@@ -80,6 +85,7 @@ RUN apk --no-cache add bash \
                        mysql-client \
                        postgresql17-client \
                        postgresql18-client \
+                       sqlite \
                        aws-cli \
                        curl \
                        tzdata \

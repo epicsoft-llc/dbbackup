@@ -36,6 +36,38 @@ latest:
   only:
     - main
 
+#### Versioned release. Triggered by a git tag 'X.Y.Z' and the only job that
+#### produces a tag a consumer can pin. Also moves 'latest', so an existing
+#### deployment on ':latest' keeps working - the point of the version tags is
+#### that nobody HAS to use ':latest', not that it disappears.
+release:
+  stage: build
+  variables:
+    VERSION: "${CI_COMMIT_TAG}"
+  script:
+    - echo "Build Docker image for database backup with version '${VERSION}'"
+    - MAJOR_MINOR="${VERSION%.*}"
+    - MAJOR="${MAJOR_MINOR%.*}"
+    - docker buildx use epicbuilder > /dev/null 2>&1 || docker buildx create --name epicbuilder --use > /dev/null 2>&1
+    - docker buildx build . --push --pull --no-cache
+        --platform linux/amd64,linux/arm64
+        -t ${CI_REGISTRY_IMAGE}:${VERSION}
+        -t ${CI_REGISTRY_IMAGE}:${MAJOR_MINOR}
+        -t ${CI_REGISTRY_IMAGE}:${MAJOR}
+        -t ${CI_REGISTRY_IMAGE}:latest
+        -t ${DOCKER_REGISTRY}:${VERSION}
+        -t ${DOCKER_REGISTRY}:${MAJOR_MINOR}
+        -t ${DOCKER_REGISTRY}:${MAJOR}
+        -t ${DOCKER_REGISTRY}:latest
+        --build-arg IMAGE_TAG=${VERSION}
+        --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+  retry: 2
+  only:
+    refs:
+      - /^\d+\.\d+\.\d+$/
+  except:
+    - branches
+
 develop:
   stage: build
   variables:
