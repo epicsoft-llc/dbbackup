@@ -119,6 +119,12 @@ case ${BACKUP} in
     source "${SCRIPT_DIR}/postresql.sh"
     logInfo "PostgreSQL backup completed"
     ;;
+  "SQLite" | "SQLITE" | "sqlite" | "SQLITE3" | "sqlite3" )
+    logInfo "SQLite backup starting"
+    __BACKUP_TYPE="sqlite"
+    source "${SCRIPT_DIR}/sqlite.sh"
+    logInfo "SQLite backup completed"
+    ;;
   * )
     logError "Backup '${BACKUP}' not supported"
     exit 1

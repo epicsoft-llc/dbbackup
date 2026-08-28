@@ -173,15 +173,34 @@ A webhook that cannot be reached or that answers with anything other than `2xx` 
 
 ## Versions
 
-`latest` based on `alpine:latest` - build `weekly`
+Released through a git tag `X.Y.Z`, which publishes `X.Y.Z`, `X.Y`, `X` and moves `latest`.
+Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+
+| Tag | Content |
+|---|---|
+| `1.2.3` | exactly this build - **use this in production** |
+| `1.2` | latest patch of `1.2` - safe to follow, no behaviour changes |
+| `1` | latest minor of `1` - new features, no breaking changes |
+| `latest` | newest release of any version - **can change the major version without warning** |
+| `develop` | current state of the `develop` branch, not for production |
+
+> With a backup image, a silently changed behaviour is not noticed when it
+> happens but when the backup is needed. Pin `X.Y.Z` or `X.Y`.
+
+All tags are based on `alpine:latest` - build `weekly`
 
 ## Environment variables
 
-- `BACKUP` type of database backup, one of `mysql`, `mariadb`, `pgsql` ***required*** 
+- `BACKUP` type of database backup, one of `mysql`, `mariadb`, `pgsql`, `sqlite` ***required*** 
 - `CRON_SCHEDULE` cron expression with 5 fields, for example `0 3 * * *` for a daily backup at 03:00, or a keyword such as `@daily`. A schedule that is not usable is rejected on start instead of silently never running. If empty the container creates one backup and exits (default: *empty*)
 - `CRON_RUN_ON_START` create a backup immediately when the container starts, additionally to the schedule (default: `false`)
 - `HEALTHCHECK_MAX_AGE` how old the last successful backup may get before the container is reported unhealthy, for example `26h`. Understands `m`, `h` and `d`, a plain number counts as minutes. If empty the healthcheck only reports a dead cron daemon and a failed run (default: *empty*)
 - `TZ` timezone the cron schedule is evaluated in, for example `Europe/Berlin` (default: `UTC`)
+- `SQLITE_DATABASE` path to the SQLite database file inside the container, several paths separated by spaces (only with `SQLITE_MODE=dump`) ***required for `BACKUP=sqlite`***
+- `SQLITE_MODE` `backup` uses the built-in online backup and writes a self-contained database file, `dump` writes SQL text (default: `backup`)
+- `SQLITE_FILENAME` name of the backup file, without timestamp and extension (default: `backup`)
+- `SQLITE_INTEGRITY_CHECK` run `PRAGMA integrity_check` and fail the run instead of storing an unusable backup. In `backup` mode the copy is checked, in `dump` mode the source (default: `true`)
+- `SQLITE_REPORT_SIZE` additionally log the compacted size (`VACUUM INTO`) next to the file size. SQLite does not return deleted pages to the file system, so a growing file is not necessarily growing data (default: `false`)
 - `WEBHOOK_METHOD` how the webhooks are called, `GET` or `POST` (default: `GET`)
 - `WEBHOOK_SUCCESS_URL` URL to call after a successful backup, or `WEBHOOK_SUCCESS_URL_FILE` (default: *empty*)
 - `WEBHOOK_FAILURE_URL` URL to call after a failed backup, or `WEBHOOK_FAILURE_URL_FILE` (default: *empty*)
@@ -249,6 +268,7 @@ Alpine packages are installed in the current image in the latest version - https
 - mysql-client
 - postgresql17-client
 - postgresql18-client
+- sqlite
 - aws-cli
 - curl
 - p7zip
@@ -283,6 +303,36 @@ docker run --rm \
   -v /tmp:/backup:rw \
   epicsoft/dbbackup:latest
 ```
+
+### Back up a SQLite database while the application keeps running
+
+The database is a file, so it has to be mounted into the container, and the
+container needs to be able to read a file that belongs to the application - hence
+`group_add`.
+
+```bash
+docker run --rm \
+  -e BACKUP=sqlite \
+  -e SQLITE_DATABASE=/data/grafana.db \
+  -e SQLITE_FILENAME=grafana \
+  -e RETENTION_KEEP_DAYS=30 \
+  -e COMPRESS_ENABLE=true \
+  --group-add 472 \
+  -v /srv/acc-monitoring/grafana:/data:rw \
+  -v /mnt/backup/grafana:/backup:rw \
+  epicsoft/dbbackup:1.0.0
+```
+
+`SQLITE_MODE=backup` is the default and the safe one while the application is
+writing. A plain file copy can catch the database mid-write, and the `-wal` and
+`-shm` files belonging to it are not part of the copy - the result looks fine
+until it is restored.
+
+> **Why the source is mounted `rw` and not `ro`:** a database in WAL mode cannot
+> even be *read* from a read-only mount, because SQLite has to create the `-shm`
+> file next to it. `:ro` works only for databases that use a rollback journal.
+> The image detects the case and says so instead of failing with
+> `unable to open database file`.
 
 ### Dump a database from MariaDB and compress with encryption
 
@@ -398,6 +448,26 @@ If the length is correct, the password is not the problem. The same error is ret
 
 ```sql
 SELECT user, host FROM mysql.user WHERE user = '<USERNAME>';
+```
+
+### `SQLite database '...' uses WAL and its directory is not writable`
+
+The database is in WAL mode and its directory is mounted read-only. SQLite has to
+create a `-shm` file next to the database **even to read it**, so a read-only
+mount fails - this is a property of SQLite, not of the backup.
+
+Mount the directory read-write:
+
+```bash
+-v /srv/app/data:/data:rw
+```
+
+Databases that use a rollback journal instead of WAL do work read-only. Which one
+it is can be read from byte 18 of the file header - `1` is a rollback journal,
+`2` is WAL:
+
+```bash
+dd if=/srv/app/data/app.db bs=1 skip=18 count=1 2>/dev/null | od -An -tu1
 ```
 
 ### `TLS/SSL error: self-signed certificate in certificate chain`
