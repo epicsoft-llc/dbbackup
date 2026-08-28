@@ -61,7 +61,7 @@ release:
         -t ${DOCKER_REGISTRY}:latest
         --build-arg IMAGE_TAG=${VERSION}
         --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-  retry: 2
+  retry: 1
   only:
     refs:
       - /^\d+\.\d+\.\d+$/
