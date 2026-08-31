@@ -19,6 +19,34 @@ moves `latest`.
 
 ---
 
+## [1.1.0] - 2026-08-31
+
+### Added
+
+- **`STAGING_DIR`** — directory the raw dump is written to while compression is
+enabled (default `/tmp/dbbackup`). It has to be on the container's own file
+system, not inside `/backup`.
+
+### Changed
+
+- **With `COMPRESS_ENABLE` on, the raw dump is staged on the container's own
+file system and only the finished archive is written to `/backup`.** It used to
+be written into `/backup` and packed there. `/backup` is normally a mount of
+remote storage that keeps snapshots of its own, and a snapshot taken while the
+unpacked dump was still lying there kept a copy that the `rm` at the end of the
+compress stage could no longer reach.
+- A failing compress stage now removes the staged dump as well, so no unpacked
+dump survives a broken run.
+- The SQLite size report writes its `VACUUM INTO` file to the staging directory
+instead of the backup target.
+
+Without compression nothing changes: the dump is the result and goes to
+`/backup` directly. **No configuration change is required** — file name, file
+location and the retention, S3 and webhook stages all see the same result as
+before.
+
+---
+
 ## [1.0.0] - 2026-08-28
 
 First versioned release. The image existed before this, published as `latest`

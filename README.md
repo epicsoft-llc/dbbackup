@@ -201,6 +201,7 @@ All tags are based on `alpine:latest` - build `weekly`
 - `WEBHOOK_FAILURE_URL` URL to call after a failed backup, or `WEBHOOK_FAILURE_URL_FILE` (default: *empty*)
 - `RETENTION_KEEP_LAST` number of newest backups to keep in the working directory. If empty this rule is not applied (default: *empty*)
 - `RETENTION_KEEP_DAYS` keep backups in the working directory that are not older than this number of days. If empty this rule is not applied (default: *empty*)
+- `STAGING_DIR` directory the raw dump is written to while `COMPRESS_ENABLE` is on, before it is packed into `/backup`. Only the finished archive reaches the backup target, so an unpacked dump never lies on remote storage and cannot be caught by one of its snapshots. Must be on the container's own file system, not inside `/backup`. Without compression the dump is the result and is written to `/backup` directly, and this variable has no effect (default: `/tmp/dbbackup`)
 - `COMPRESS_ENABLE` enable compression of dump with 7-Zip (default: `false`)
 - `COMPRESS_OPTIONS` 7-Zip arguments for compression (default: `a -t7z -md=20 -m0=lzma2 -mx=9 -mmt=on -aoa`)
 - `COMPRESS_ENCRYPTION_PASSWORD` 7-Zip password for encryption, or `COMPRESS_ENCRYPTION_PASSWORD_FILE` (default: *empty*)
