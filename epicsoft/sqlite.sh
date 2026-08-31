@@ -22,7 +22,7 @@ else
 fi
 
 readonly SQLITE_FILE_NAME="${SQLITE_START_TIME}.${SQLITE_FILENAME}.${SQLITE_FILE_EXTENSION}"
-readonly SQLITE_FILE_PATH="${WORKING_DIR}"
+readonly SQLITE_FILE_PATH="${DUMP_DIR}"
 readonly SQLITE_FILE="${SQLITE_FILE_PATH}/${SQLITE_FILE_NAME}"
 
 if [ -z "${SQLITE_DATABASE}" ]; then
@@ -153,7 +153,7 @@ fi
 # visible instead of leaving a growing file to be read as growing data.
 if [ ! -z "$(echo "${SQLITE_REPORT_SIZE}" | grep -i -E "(y|yes|true|1)")" ]; then
   for SQLITE_DB in ${SQLITE_DATABASE}; do
-    SQLITE_VACUUM_FILE="$(mktemp "${WORKING_DIR}/.sqlite-vacuum-XXXXXX")"
+    SQLITE_VACUUM_FILE="$(mktemp "${DUMP_DIR}/.sqlite-vacuum-XXXXXX")"
     rm -f "${SQLITE_VACUUM_FILE}"
     registerCleanupFile "${SQLITE_VACUUM_FILE}"
     sqlite3 "${SQLITE_DB}" "VACUUM INTO '${SQLITE_VACUUM_FILE}';"

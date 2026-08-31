@@ -1,7 +1,10 @@
 #!/bin/bash
 
 readonly COMPRESS_FILE_NAME="${__BACKUP_FILE_NAME}.7z"
-readonly COMPRESS_FILE_PATH="${__BACKUP_FILE_PATH}"
+
+# the archive goes to the backup target, not next to the dump - the dump is
+# staged outside '/backup' so that no unpacked copy ever reaches the target
+readonly COMPRESS_FILE_PATH="${WORKING_DIR}"
 readonly COMPRESS_FILE="${COMPRESS_FILE_PATH}/${COMPRESS_FILE_NAME}"
 
 readSecretFile "COMPRESS_ENCRYPTION_PASSWORD"
@@ -21,7 +24,13 @@ if [ ! -z "${COMPRESS_ENCRYPTION_PASSWORD}" ]; then
   COMPRESS_ENCRYPTED="true"
 fi
 
+mkdir -p "${COMPRESS_FILE_PATH}"
+
 registerFailureCleanupFile "${COMPRESS_FILE}"
+
+# the staged dump is unpacked, so a failing compress stage must not leave it
+# behind either - the driver released it when the dump finished
+registerFailureCleanupFile "${__BACKUP_FILE}"
 
 if [ "${COMPRESS_ENCRYPTED}" == "true" ]; then
   printf '%s\n' "${COMPRESS_ENCRYPTION_PASSWORD}" | 7z ${COMPRESS_ARGUMENTS} "${COMPRESS_FILE}" "${__BACKUP_FILE}"

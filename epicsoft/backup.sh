@@ -7,6 +7,31 @@ readonly WORKING_DIR="/backup"
 
 source "${SCRIPT_DIR}/utils.sh"
 
+# Where the raw dump is written before it is packed.
+#
+# When the dump is going to be packed anyway it must not be written to
+# '/backup' first. That directory is the backup target and is usually a mount of
+# remote storage with snapshots of its own. A snapshot taken while the raw dump
+# is still lying there keeps a copy of it, and that copy outlives the 'rm' at
+# the end of the compress stage - on storage whose snapshots cannot be deleted
+# from the account that writes the backup, it outlives it for good. So the dump
+# is staged on the container's own file system and only the finished archive
+# reaches the target.
+#
+# Without the compress stage there is nothing to stage for: the dump itself is
+# the result and belongs in the target directly.
+if [ -z "${STAGING_DIR}" ]; then
+  STAGING_DIR="/tmp/dbbackup"
+fi
+
+readonly STAGING_DIR
+
+if [ ! -z "$(echo "${COMPRESS_ENABLE}" | grep -i -E "(y|yes|true|1)")" ]; then
+  readonly DUMP_DIR="${STAGING_DIR}"
+else
+  readonly DUMP_DIR="${WORKING_DIR}"
+fi
+
 readonly BACKUP_START_EPOCH="$(date +%s)"
 readonly BACKUP_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 readonly BACKUP_STATE_FILE="/tmp/dbbackup.state"
