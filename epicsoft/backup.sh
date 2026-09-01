@@ -120,6 +120,27 @@ trap 'exit 130' INT
 
 logInfo "Backup starting"
 
+# The dump is the database in plain text and it ends up in '/backup' - a volume that
+# normally lives on a host or a share, where the file outlives the container and is read
+# by whoever can enter the mount. With the umask a container starts with it would be
+# created world readable there, so the mask is set once here and covers everything a run
+# produces: dump, archive and the staging directory.
+#
+# '027' keeps the group, which is what a share with a backup group needs. Anyone who
+# reads the backups as another user sets 'BACKUP_UMASK' to '022' and is back to the
+# behaviour before this variable existed.
+if [ -z "${BACKUP_UMASK}" ]; then
+  logError "You need to set the 'BACKUP_UMASK' environment variable."
+  exit 1
+fi
+
+if [ -z "$(echo "${BACKUP_UMASK}" | grep -E '^[0-7]{3,4}$')" ]; then
+  logError "'BACKUP_UMASK' must be an octal file mode mask, for example '027'."
+  exit 1
+fi
+
+umask "${BACKUP_UMASK}"
+
 if [ -z "${BACKUP}" ]; then
   logError "You need to set the 'BACKUP' environment variable."
   exit 1

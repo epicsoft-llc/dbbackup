@@ -14,9 +14,31 @@ if [ -z "${CRON_SCHEDULE}" ]; then
   exec bash "${SCRIPT_DIR}/backup.sh"
 fi
 
+# the schedule is written verbatim into the crontab below, so a newline in it is not a
+# broken schedule but a second crontab line that crond runs as root. this has to be
+# checked before anything else and it cannot be checked with grep, which works line by
+# line and happily matches the harmless first line of a two line value
+case "${CRON_SCHEDULE}" in
+  *$'\n'* | *$'\r'* )
+    logError "'CRON_SCHEDULE' must be a single line."
+    exit 1
+    ;;
+  *[![:blank:]0-9A-Za-z@*,/-]* )
+    logError "'CRON_SCHEDULE' must only contain letters, digits, '@', '*', ',', '/', '-' and spaces."
+    exit 1
+    ;;
+esac
+
 # an unusable schedule would only show up as a crond parse error in the log while the
-# container keeps running and silently never backs anything up
-if [ -z "$(echo "${CRON_SCHEDULE}" | grep -E '^@')" ] && [ "$(echo "${CRON_SCHEDULE}" | wc -w)" != "5" ]; then
+# container keeps running and silently never backs anything up. the keywords are checked
+# against the list crond actually knows - accepting every '@...' would have skipped the
+# field count for anything starting with '@'
+if [ ! -z "$(echo "${CRON_SCHEDULE}" | grep -E '^@')" ]; then
+  if [ -z "$(echo "${CRON_SCHEDULE}" | grep -E '^@(reboot|yearly|annually|monthly|weekly|daily|midnight|hourly)$')" ]; then
+    logError "'CRON_SCHEDULE' must be '@reboot', '@yearly', '@annually', '@monthly', '@weekly', '@daily', '@midnight' or '@hourly'."
+    exit 1
+  fi
+elif [ "$(echo "${CRON_SCHEDULE}" | wc -w)" != "5" ]; then
   logError "'CRON_SCHEDULE' must have 5 fields, for example '0 3 * * *'."
   exit 1
 fi

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# checked before the path is built from it, not with the other variables further down -
+# by then the file name would already be part of a readonly path
+assertSafeFilename "PGSQL_FILENAME"
+
 readonly PGSQLDUMP_START_TIME=$(date +"%Y%m%d-%H%M%S")
 readonly PGSQLDUMP_FILE_NAME="${PGSQLDUMP_START_TIME}.${PGSQL_FILENAME}.sql"
 readonly PGSQLDUMP_FILE_PATH="${DUMP_DIR}"

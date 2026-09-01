@@ -2,7 +2,7 @@
 
 This Docker image is managed and kept up to date by [epicsoft LLC](https://epicsoft.one).
 
-Docker image for creating database backups for [MySQL](https://www.mysql.com/), [MariaDB](https://mariadb.org/) and [PostgreSQL](https://www.postgresql.org/) based on official Alpine image.
+Docker image for creating database backups for [MySQL](https://www.mysql.com/), [MariaDB](https://mariadb.org/), [PostgreSQL](https://www.postgresql.org/) and [SQLite](https://www.sqlite.org/) based on official Alpine image.
 
 * Base image: https://hub.docker.com/_/alpine
 * Dockerfile: https://gitlab.com/epicsoft-networks/dbbackup/blob/main/Dockerfile
@@ -12,7 +12,7 @@ Docker image for creating database backups for [MySQL](https://www.mysql.com/), 
 
 ## Description
 
-This Docker image creates database dumps for [MySQL](https://www.mysql.com/), [MariaDB](https://mariadb.org/) and [PostgreSQL](https://www.postgresql.org/).  
+This Docker image creates database dumps for [MySQL](https://www.mysql.com/), [MariaDB](https://mariadb.org/), [PostgreSQL](https://www.postgresql.org/) and [SQLite](https://www.sqlite.org/).  
 Depending on the configuration, the created DB dump can be compressed with [7Zip](https://www.7-zip.org/) and uploaded to an S3 storage.  
 Docker Image for database backup based on official [Alpine image](https://hub.docker.com/_/alpine).
 
@@ -20,6 +20,7 @@ Features:
 - Create [MySQL](https://www.mysql.com/) database dump 
 - Create [MariaDB](https://mariadb.org/) database dump 
 - Create [PostgreSQL](https://www.postgresql.org/) database dump 
+- Back up a [SQLite](https://www.sqlite.org/) database file while the application keeps writing
 - Compress and encrypt database dump file with [7Zip](https://www.7-zip.org/)
 - Upload database dump file to S3 storage
 - Run the backup on a schedule inside a long running container (cron)
@@ -28,7 +29,7 @@ Features:
 - Trigger a backup manually in a running cron container
 - Report an unhealthy container when the backups stop working
 
-Working direktory: `/backup`
+Working directory: `/backup`
 
 ## Modes
 
@@ -101,10 +102,14 @@ Every password and key can be read from a file instead of an environment variabl
 - `COMPRESS_ENCRYPTION_PASSWORD_FILE`
 - `S3_ACCESS_KEY_FILE`
 - `S3_SECRET_KEY_FILE`
+- `WEBHOOK_SUCCESS_URL_FILE`
+- `WEBHOOK_FAILURE_URL_FILE`
 
-No password is passed on the command line, where it would be readable for every process in the container and through `docker top` on the host. For MySQL and MariaDB the dump is started with the dump is started with a `--defaults-extra-file` that is created at runtime with mode 0600 and removed again when the backup ends. That way the password is not visible in the process list of the container or in `docker top` on the host. For PostgreSQL the password is handed over in `PGPASSWORD`, and 7-Zip reads its encryption password from stdin - neither is visible there either.
+No password is passed on the command line, where it would be readable for every process in the container and through `docker top` on the host. For MySQL and MariaDB the dump is started with a `--defaults-extra-file` that is created at runtime with mode 0600 and removed again when the backup ends. That way the password is not visible in the process list of the container or in `docker top` on the host. For PostgreSQL the password is handed over in `PGPASSWORD`, and 7-Zip reads its encryption password from stdin - neither is visible there either.
 
 A trailing newline in the file is stripped. Setting a variable and its `_FILE` counterpart at the same time is an error, as is a missing, unreadable or empty file. In cron mode the file is read again on every scheduled run.
+
+The backup itself is the database in plain text and it stays on the volume after the container is gone, so it is not created world readable either. Everything a run writes gets mode `0640` for files and `0750` for directories, adjustable with [`BACKUP_UMASK`](#environment-variables). Encrypt the backup with `COMPRESS_ENCRYPTION_PASSWORD` if the file mode alone is not enough for where it is stored.
 
 ## Retention
 
@@ -192,9 +197,10 @@ All tags are based on `alpine:latest` - build `weekly`
 ## Environment variables
 
 - `BACKUP` type of database backup, one of `mysql`, `mariadb`, `pgsql`, `sqlite` ***required*** 
-- `CRON_SCHEDULE` cron expression with 5 fields, for example `0 3 * * *` for a daily backup at 03:00, or a keyword such as `@daily`. A schedule that is not usable is rejected on start instead of silently never running. If empty the container creates one backup and exits (default: *empty*)
+- `CRON_SCHEDULE` cron expression with 5 fields, for example `0 3 * * *` for a daily backup at 03:00, or one of the keywords `@yearly`, `@annually`, `@monthly`, `@weekly`, `@daily`, `@midnight`, `@hourly` and `@reboot` — note that `@reboot` runs once when the container starts and never again. A schedule that is not usable is rejected on start instead of silently never running. It has to be a single line and must only contain letters, digits, `@`, `*`, `,`, `/`, `-` and spaces, because it is written into the crontab as it is. If empty the container creates one backup and exits (default: *empty*)
 - `CRON_RUN_ON_START` create a backup immediately when the container starts, additionally to the schedule (default: `false`)
 - `HEALTHCHECK_MAX_AGE` how old the last successful backup may get before the container is reported unhealthy, for example `26h`. Understands `m`, `h` and `d`, a plain number counts as minutes. If empty the healthcheck only reports a dead cron daemon and a failed run (default: *empty*)
+- `BACKUP_UMASK` octal file mode mask for everything a run writes — dump, archive and staging directory. A dump is the database in plain text and it stays on the backup volume after the container is gone, so it is not created world readable. `027` gives files `0640` and directories `0750`, that is owner and group. Set it to `022` if the backups are read on the host as another user (default: `027`)
 - `TZ` timezone the cron schedule is evaluated in, for example `Europe/Berlin` (default: `UTC`)
 - `WEBHOOK_METHOD` how the webhooks are called, `GET` or `POST` (default: `GET`)
 - `WEBHOOK_SUCCESS_URL` URL to call after a successful backup, or `WEBHOOK_SUCCESS_URL_FILE` (default: *empty*)
@@ -224,7 +230,7 @@ All tags are based on `alpine:latest` - build `weekly`
 - `MARIADBDUMP_OPTIONS` dump options (default: `--verbose --hex-blob --quote-names --quick --add-drop-table --add-locks --create-options --allow-keywords --disable-keys --extended-insert --single-transaction --comments --no-tablespaces`)
 - `MARIADBDUMP_ADD_OPTIONS` additional dump options (default: *empty*)
 - `MARIADBDUMP_DATABASES` list of databases to backup (default: `--all-databases`)
-- `MARIADBDUMP_FILENAME` name of backup file (default: `backup`)
+- `MARIADBDUMP_FILENAME` name of backup file, only letters, digits, `.`, `_` and `-` (default: `backup`)
 
 ***only if `BACKUP` is `mysql`***
 
@@ -235,7 +241,7 @@ All tags are based on `alpine:latest` - build `weekly`
 - `MYSQLDUMP_OPTIONS` dump options (default: `--verbose --hex-blob --quote-names --quick --add-drop-table --add-locks --create-options --allow-keywords --disable-keys --extended-insert --single-transaction --comments --no-tablespaces`)
 - `MYSQLDUMP_ADD_OPTIONS` additional dump options (default: *empty*)
 - `MYSQLDUMP_DATABASES` list of databases to backup (default: `--all-databases`)
-- `MYSQLDUMP_FILENAME` name of backup file (default: `backup`)
+- `MYSQLDUMP_FILENAME` name of backup file, only letters, digits, `.`, `_` and `-` (default: `backup`)
 
 Connecting to MySQL 8.4 and newer fails with `TLS/SSL error: self-signed certificate in certificate chain`, because the client verifies the self-signed certificate the server creates on first start. Either install a certificate the client trusts on the server, or switch the verification off:
 
@@ -251,14 +257,14 @@ MYSQLDUMP_ADD_OPTIONS=--ssl-verify-server-cert=0
 - `PGSQL_PASSWORD` database password, or `PGSQL_PASSWORD_FILE` ***required***
 - `PGSQL_OPTIONS` dump options (default: `--verbose`)
 - `PGSQL_DATABASES` list of databases to backup (default: `--all-databases`)
-- `PGSQL_FILENAME` name of backup file (default: `backup`)
+- `PGSQL_FILENAME` name of backup file, only letters, digits, `.`, `_` and `-` (default: `backup`)
 - `PGSQL_VERSION` Version number of the pg-client; possible values are `17` and `18` (default: `17`)
 
 ***only if `BACKUP` is `sqlite`***
 
 - `SQLITE_DATABASE` path to the SQLite database file inside the container, several paths separated by spaces (only with `SQLITE_MODE=dump`) ***required for `BACKUP=sqlite`***
 - `SQLITE_MODE` `backup` uses the built-in online backup and writes a self-contained database file, `dump` writes SQL text (default: `backup`)
-- `SQLITE_FILENAME` name of the backup file, without timestamp and extension (default: `backup`)
+- `SQLITE_FILENAME` name of the backup file, without timestamp and extension, only letters, digits, `.`, `_` and `-` (default: `backup`)
 - `SQLITE_INTEGRITY_CHECK` run `PRAGMA integrity_check` and fail the run instead of storing an unusable backup. In `backup` mode the copy is checked, in `dump` mode the source (default: `true`)
 - `SQLITE_REPORT_SIZE` additionally log the compacted size (`VACUUM INTO`) next to the file size. SQLite does not return deleted pages to the file system, so a growing file is not necessarily growing data (default: `false`)
 

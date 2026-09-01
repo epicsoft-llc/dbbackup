@@ -19,6 +19,98 @@ moves `latest`.
 
 ---
 
+## [2.0.0] - 2026-09-01
+
+A security release. Values that used to be taken as given are now checked, and
+the backup file is no longer created world readable. **The file mode changes
+for every installation, and some file names that were accepted before are
+not any more** — see *Breaking* at the end.
+
+### Added
+
+- **`BACKUP_UMASK`** — file mode mask for everything a run writes: dump,
+archive and staging directory (default `027`, that is `0640` for files and
+`0750` for directories).
+- `STAGING_DIR` is declared in the image now. Its default lived only inside the
+script, so `docker inspect` did not list it among the settings. Value and
+behaviour are unchanged.
+
+### Fixed
+
+- **The `POST` webhook body stays valid JSON.** A carriage return in a value
+was passed through raw, and a raw control character inside a JSON string makes
+the whole body invalid — so the receiver rejected exactly the notification the
+run existed to send. Not an exotic case: a `.env` file or a CI variable with
+CRLF line endings puts one into `MYSQL_HOST` without anyone noticing. Return is
+escaped now, and the remaining control characters, which have no place in a
+host name or a file name, are dropped. The values this affects are the ones
+that reach the body unvalidated: database host, database list, S3 target.
+- **A failing `SQLITE_REPORT_SIZE` no longer deletes the backup it just
+reported on.** The report runs `VACUUM INTO` against the source database, which
+fails on a malformed one — and it ran before the finished backup was released
+from the cleanup that removes incomplete files. A complete backup was then
+deleted, logged as "Removing incomplete file", by a diagnostic that is purely
+informational. The file is released as soon as the backup is written now.
+- **A failed SQLite integrity check says so now.** `sqlite3` exits non-zero on a
+corrupted database, and `set -e` ended the run on that exit before the error
+message was reached — the log simply stopped after "integrity check starting".
+The run failed either way, so no unusable backup was ever stored, but the
+reason was missing. The exit code is part of the message now.
+- The README documents SQLite, which has been a supported `BACKUP` type since
+1.0.0 but was missing from the description and the feature list — the same text
+that is published as the image description on Docker Hub.
+- `WEBHOOK_SUCCESS_URL_FILE` and `WEBHOOK_FAILURE_URL_FILE` are listed among
+the variables that can be read from a file. They worked, they were just not in
+that list.
+
+### Security
+
+- **A `CRON_SCHEDULE` can no longer add a line to the crontab.** The schedule
+is written into `/etc/crontabs/root` as it is, so a value containing a newline
+did not produce a broken schedule but a second crontab entry, which crond ran
+as root. The field count alone did not catch it: any value beginning with `@`
+skipped that check entirely. The value now has to be a single line, may only
+contain the characters a schedule consists of, and an `@` keyword is matched
+against the list crond actually knows.
+- **`MARIADBDUMP_FILENAME`, `MYSQLDUMP_FILENAME`, `PGSQL_FILENAME` and
+`SQLITE_FILENAME` are restricted to letters, digits, `.`, `_` and `-`.** The
+value went into the path of the dump unchecked, and that path is written to and
+removed with `rm`, so a `/` in it reached files outside `/backup`. A `*` in it
+widened the retention pattern onto files that do not belong to this backup.
+`PGSQL_FILENAME` was not checked for being empty at all. The name is now
+checked before the path is built from it.
+- **The SQLite backup target is escaped for the `sqlite3` dot command.** The
+target was placed in `.backup '<path>'`, a string `sqlite3` parses itself,
+where shell quoting does not reach — a single quote in the path ended the
+argument. The same applies to the `VACUUM INTO` of `SQLITE_REPORT_SIZE`, which
+is SQL and escapes differently. Both are escaped for their own syntax now.
+- **The backup is no longer created world readable.** A dump is the database in
+plain text and it stays on the backup volume after the container is gone, where
+it used to be mode `0644` — readable for everyone who can enter the mount. See
+`BACKUP_UMASK` above.
+
+### Breaking
+
+Four things behave differently than before:
+
+| Setting | Now | Was |
+|---|---|---|
+| the mode of every backup file | `0640`, set `BACKUP_UMASK=022` for the old behaviour | `0644`, readable for everyone |
+| a `*_FILENAME` with a space, `/`, `*` or a quote | rejected on start | a space worked and named the file that way, a `/` wrote the dump outside `/backup` |
+| `CRON_SCHEDULE` over several lines | rejected on start | ran the second line as a crontab entry of its own |
+| `CRON_SCHEDULE` with an unknown `@` keyword, for example `@5min` | rejected on start | accepted, but never ran a backup |
+
+The first two are what makes this a major version: the file mode changes for
+everyone, and a file name that worked stops working. The two `CRON_SCHEDULE`
+rows only affect setups that were not producing backups anyway - but a
+container that used to stay up now exits, which an orchestrator will notice.
+
+Nothing else changes: file name pattern, backup location and the dump,
+compress, S3, retention, webhook and healthcheck stages behave exactly as
+before.
+
+---
+
 ## [1.1.0] - 2026-08-31
 
 ### Added

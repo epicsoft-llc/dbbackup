@@ -91,6 +91,15 @@ jsonValue() {
   _VALUE="${_VALUE//\"/\\\"}"
   _VALUE="${_VALUE//$'\t'/\\t}"
   _VALUE="${_VALUE//$'\n'/\\n}"
+  _VALUE="${_VALUE//$'\r'/\\r}"
+
+  # A raw control character in a JSON string makes the whole body invalid, and the
+  # receiver then drops a notification that was the point of the whole thing. The values
+  # that get here are not all validated: the database host, the database list and the S3
+  # target come from the environment as they are, and a '\r' rides in with any '.env'
+  # file or CI variable that has CRLF line endings. Tab, newline and return are escaped
+  # above, the rest has no business in a host name or a file name and is dropped.
+  _VALUE="$(printf '%s' "${_VALUE}" | tr -d '\000-\037')"
 
   printf '"%s"' "${_VALUE}"
 }
@@ -154,6 +163,30 @@ writeClientPasswordFile() {
   _PASSWORD="${_PASSWORD//\"/\\\"}"
 
   printf '[client]\npassword="%s"\n' "${_PASSWORD}" > "${_FILE}"
+}
+
+# makes sure the file name in <VAR_NAME> is a plain name and nothing else. it ends up in
+# a path that is written to and removed with 'rm', in the retention pattern and in the
+# sqlite3 dot command, so a '/' would move all of that out of '/backup', a '*' would
+# widen retention onto foreign files and a quote would break out of the dot command
+#
+# checked with 'case' and not with 'grep': grep works line by line and would accept a
+# value whose *second* line is harmless, which is exactly how a newline gets through
+assertSafeFilename() {
+  local _VAR_NAME=${1}
+  local _VALUE="${!_VAR_NAME}"
+
+  if [ -z "${_VALUE}" ]; then
+    logError "You need to set the '${_VAR_NAME}' environment variable."
+    exit 1
+  fi
+
+  case "${_VALUE}" in
+    *[!A-Za-z0-9._-]* )
+      logError "'${_VAR_NAME}' must only contain letters, digits, '.', '_' and '-'."
+      exit 1
+      ;;
+  esac
 }
 
 # reads the value of <VAR_NAME> from the file in <VAR_NAME>_FILE, if that variable is set

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# checked before the path is built from it, not with the other variables further down -
+# by then the file name would already be part of a readonly path
+assertSafeFilename "MYSQLDUMP_FILENAME"
+
 readonly MYSQLDUMP_START_TIME=$(date +"%Y%m%d-%H%M%S")
 readonly MYSQLDUMP_FILE_NAME="${MYSQLDUMP_START_TIME}.${MYSQLDUMP_FILENAME}.sql"
 readonly MYSQLDUMP_FILE_PATH="${DUMP_DIR}"
@@ -34,11 +38,6 @@ fi
 
 if [ -z "${MYSQLDUMP_DATABASES}" ]; then
   logError "You need to set the 'MYSQLDUMP_DATABASES' environment variable."
-  exit 1
-fi
-
-if [ -z "${MYSQLDUMP_FILENAME}" ]; then
-  logError "You need to set the 'MYSQLDUMP_FILENAME' environment variable."
   exit 1
 fi
 
