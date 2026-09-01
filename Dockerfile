@@ -20,6 +20,8 @@ LABEL image.name="epicsoft_dbbackup" \
       license="MIT"
 
 ENV BACKUP=""
+ENV BACKUP_UMASK="027"
+ENV STAGING_DIR="/tmp/dbbackup"
 ENV TZ="UTC"
 ENV CRON_SCHEDULE=""
 ENV CRON_RUN_ON_START="false"

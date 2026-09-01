@@ -1,0 +1,9 @@
+# The image copies 'epicsoft' and nothing else. Everything else would only make the
+# build context bigger - the test environment above all, which is what changes most
+# often and would otherwise invalidate the context on every run.
+#
+# Written as a whitelist on purpose: a new file next to this one is excluded without
+# anyone having to remember to add it here.
+*
+!epicsoft
+!Dockerfile

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# checked before the path is built from it, not with the other variables further down -
+# by then the file name would already be part of a readonly path
+assertSafeFilename "MARIADBDUMP_FILENAME"
+
 readonly MARIADBDUMP_START_TIME=$(date +"%Y%m%d-%H%M%S")
 readonly MARIADBDUMP_FILE_NAME="${MARIADBDUMP_START_TIME}.${MARIADBDUMP_FILENAME}.sql"
 readonly MARIADBDUMP_FILE_PATH="${DUMP_DIR}"
@@ -34,11 +38,6 @@ fi
 
 if [ -z "${MARIADBDUMP_DATABASES}" ]; then
   logError "You need to set the 'MARIADBDUMP_DATABASES' environment variable."
-  exit 1
-fi
-
-if [ -z "${MARIADBDUMP_FILENAME}" ]; then
-  logError "You need to set the 'MARIADBDUMP_FILENAME' environment variable."
   exit 1
 fi
 
