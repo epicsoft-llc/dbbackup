@@ -10,12 +10,49 @@ Versions follow [Semantic Versioning](https://semver.org/):
 | **MINOR** | functionality is added without requiring a change to an existing configuration — a new database, a new optional variable |
 | **PATCH** | a fix or a package update without a change in behaviour |
 
-**A release is a git tag `X.Y.Z`.** CI builds `X.Y.Z`, `X.Y`, `X` from it and
-moves `latest`.
+**A release is a git tag `X.Y.Z`.** CI builds `X.Y.Z`, `X.Y`, `X` from it for
+`linux/amd64` and `linux/arm64`, moves `latest` and creates the GitHub release
+from the entry below. Each release entry names the contained versions.
 
 > ⚠️ **Use `X.Y.Z` or `X.Y` in production, not `latest`.** `latest` changes the
 > major version without warning, and with a backup image a changed behaviour is
 > not noticed when it happens but when the backup is needed.
+
+---
+
+## [2.0.1] - 2026-10-18
+
+Package updates, and a pipeline that tests the image before it publishes it.
+Nothing changes in behaviour.
+
+### Contents
+
+- MariaDB client `11.8.8`, PostgreSQL clients `17.11` and `18.6`, SQLite
+`3.53.4`, AWS CLI `2.34.63`, 7-Zip `26.01`, Alpine `3.24.2`
+
+### Changed
+
+- Rebuilt on Alpine `3.24.2`, with curl `8.22.0`, OpenSSL `3.5.8` and Python
+`3.14.8` among others - 2.0.0 had Alpine `3.24.1`, curl `8.21.0`, OpenSSL
+`3.5.7` and Python `3.14.7`.
+- **Every image is tested before it is pushed.** The database clients have to
+start, and one real backup has to succeed: a SQLite database, packed and
+encrypted with 7-Zip, the archive tested with its password. A broken build no
+longer reaches a registry.
+- The repository is mirrored to GitHub (`epicsoft-llc/dbbackup`), and every
+release is published there as a GitHub release with its entry from this file.
+- The troubleshooting section moved from the README to `TROUBLESHOOTING.md`.
+
+### Fixed
+
+- **The build failed on runners whose `docker:dind` uses TLS** - buildx did not
+reach the daemon. It gets the connection through a Docker context now.
+- **The image description on Docker Hub was cut off** at 25,000 characters, in
+the middle of the troubleshooting section. The README is below the limit again,
+and the pipeline stops instead of publishing a cut-off text.
+- README: the S3 example set `S3_UPLOAD_ENABLE`, a variable the image does not
+know; the changelog link was relative and broke on Docker Hub; the examples use
+`2.0` instead of `latest`, as the README itself recommends.
 
 ---
 

@@ -3,16 +3,16 @@ FROM alpine:latest
 ARG IMAGE_TAG="latest"
 ARG BUILD_DATE="development"
 LABEL org.label-schema.name="Database Backup" \
-      org.label-schema.description="Docker image for database backup based on official Alpine image" \
+      org.label-schema.description="MySQL, MariaDB, PostgreSQL and SQLite backups on Alpine" \
       org.label-schema.vendor="epicsoft LLC / Alexander Schwarz <info@epicsoft.one>" \
       org.label-schema.url="https://gitlab.com/epicsoft-networks/dbbackup" \
-      org.label-schema.vcs-url="https://gitlab.com/epicsoft-networks/dbbackup/tree/main" \
+      org.label-schema.vcs-url="https://gitlab.com/epicsoft-networks/dbbackup/-/tree/main" \
       org.label-schema.version=${IMAGE_TAG} \
       org.label-schema.schema-version="1.0" \
       org.label-schema.build-date=${BUILD_DATE}
 
 LABEL image.name="epicsoft_dbbackup" \
-      image.description="Docker image for database backup based on official Alpine image" \
+      image.description="MySQL, MariaDB, PostgreSQL and SQLite backups on Alpine" \
       maintainer="epicsoft LLC" \
       maintainer.name="Alexander Schwarz <info@epicsoft.one>" \
       maintainer.url="https://epicsoft.one/" \

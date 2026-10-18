@@ -16,3 +16,6 @@ trim_trailing_whitespace = false
 
 [*.sh]
 max_line_length = off
+
+[*.{yml,yaml}]
+max_line_length = 180

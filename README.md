@@ -2,26 +2,23 @@
 
 This Docker image is managed and kept up to date by [epicsoft LLC](https://epicsoft.one).
 
-Docker image for creating database backups for [MySQL](https://www.mysql.com/), [MariaDB](https://mariadb.org/), [PostgreSQL](https://www.postgresql.org/) and [SQLite](https://www.sqlite.org/) based on official Alpine image.
+Database backups for [MySQL](https://www.mysql.com/), [MariaDB](https://mariadb.org/), [PostgreSQL](https://www.postgresql.org/)
+and [SQLite](https://www.sqlite.org/) on the official [Alpine image](https://hub.docker.com/_/alpine). Depending on the
+configuration, the dump is compressed and encrypted with [7-Zip](https://www.7-zip.org/) and uploaded to an S3 storage.
 
-* Base image: https://hub.docker.com/_/alpine
-* Dockerfile: https://gitlab.com/epicsoft-networks/dbbackup/blob/main/Dockerfile
-* Repository: https://gitlab.com/epicsoft-networks/dbbackup/tree/main
-* Container-Registry: https://gitlab.com/epicsoft-networks/dbbackup/container_registry
+* Base image: https://hub.docker.com/_/alpine, platforms `linux/amd64` and `linux/arm64`
+* Dockerfile: https://gitlab.com/epicsoft-networks/dbbackup/-/blob/main/Dockerfile
+* Repository: https://gitlab.com/epicsoft-networks/dbbackup, mirrored to [GitHub](https://github.com/epicsoft-llc/dbbackup) — issues are welcome on both; code changes only as merge requests on GitLab, the mirror overwrites anything pushed to GitHub
+* Container registry: https://gitlab.com/epicsoft-networks/dbbackup/container_registry
 * Docker Hub: https://hub.docker.com/r/epicsoft/dbbackup
+* Changelog: https://gitlab.com/epicsoft-networks/dbbackup/-/blob/main/CHANGELOG.md
+* License: MIT
 
-## Description
+## Features
 
-This Docker image creates database dumps for [MySQL](https://www.mysql.com/), [MariaDB](https://mariadb.org/), [PostgreSQL](https://www.postgresql.org/) and [SQLite](https://www.sqlite.org/).  
-Depending on the configuration, the created DB dump can be compressed with [7Zip](https://www.7-zip.org/) and uploaded to an S3 storage.  
-Docker Image for database backup based on official [Alpine image](https://hub.docker.com/_/alpine).
-
-Features: 
-- Create [MySQL](https://www.mysql.com/) database dump 
-- Create [MariaDB](https://mariadb.org/) database dump 
-- Create [PostgreSQL](https://www.postgresql.org/) database dump 
+- Create a [MySQL](https://www.mysql.com/), [MariaDB](https://mariadb.org/) or [PostgreSQL](https://www.postgresql.org/) database dump
 - Back up a [SQLite](https://www.sqlite.org/) database file while the application keeps writing
-- Compress and encrypt database dump file with [7Zip](https://www.7-zip.org/)
+- Compress and encrypt the dump with [7-Zip](https://www.7-zip.org/)
 - Upload database dump file to S3 storage
 - Run the backup on a schedule inside a long running container (cron)
 - Remove old backup files from the working directory (retention)
@@ -67,7 +64,7 @@ The third rule is the one that makes the check worth having, because it is the o
 ```yaml
 services:
   backup:
-    image: epicsoft/dbbackup:latest
+    image: epicsoft/dbbackup:2.0
     environment:
       BACKUP: mariadb
       MARIADB_HOST: db
@@ -105,7 +102,7 @@ Every password and key can be read from a file instead of an environment variabl
 - `WEBHOOK_SUCCESS_URL_FILE`
 - `WEBHOOK_FAILURE_URL_FILE`
 
-No password is passed on the command line, where it would be readable for every process in the container and through `docker top` on the host. For MySQL and MariaDB the dump is started with a `--defaults-extra-file` that is created at runtime with mode 0600 and removed again when the backup ends. That way the password is not visible in the process list of the container or in `docker top` on the host. For PostgreSQL the password is handed over in `PGPASSWORD`, and 7-Zip reads its encryption password from stdin - neither is visible there either.
+No password is passed on the command line, where it would be readable for every process in the container and through `docker top` on the host. For MySQL and MariaDB the dump is started with a `--defaults-extra-file` that is created at runtime with mode 0600 and removed again when the backup ends. For PostgreSQL the password is handed over in `PGPASSWORD`, and 7-Zip reads its encryption password from stdin - neither is visible there either.
 
 A trailing newline in the file is stripped. Setting a variable and its `_FILE` counterpart at the same time is an error, as is a missing, unreadable or empty file. In cron mode the file is read again on every scheduled run.
 
@@ -144,7 +141,7 @@ docker run --rm \
   -e WEBHOOK_SUCCESS_URL='https://example.com/hook?job=nightly&status=ok' \
   -e WEBHOOK_FAILURE_URL='https://example.com/hook?job=nightly&status=failed' \
   -v /tmp:/backup:rw \
-  epicsoft/dbbackup:latest
+  epicsoft/dbbackup:2.0
 ```
 
 `WEBHOOK_METHOD` selects how they are called and applies to both:
@@ -178,36 +175,37 @@ A webhook that cannot be reached or that answers with anything other than `2xx` 
 
 ## Versions
 
-Released through a git tag `X.Y.Z`, which publishes `X.Y.Z`, `X.Y`, `X` and moves `latest`.
-Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+Released through a git tag `X.Y.Z`, which publishes `X.Y.Z`, `X.Y`, `X` and moves `latest`. Changes and the contained
+versions are listed in the [changelog](https://gitlab.com/epicsoft-networks/dbbackup/-/blob/main/CHANGELOG.md).
 
 | Tag | Content |
 |---|---|
-| `1.2.3` | exactly this build - **use this in production** |
-| `1.2` | latest patch of `1.2` - safe to follow, no behaviour changes |
-| `1` | latest minor of `1` - new features, no breaking changes |
-| `latest` | newest release of any version - **can change the major version without warning** |
+| `2.0.1` | exactly this build - **use this in production** |
+| `2.0` | latest patch of `2.0` - safe to follow, no behaviour changes |
+| `2` | latest minor of `2` - new features, no breaking changes |
+| `latest` | the `main` branch, rebuilt weekly on `alpine:latest` - **can change the major version without warning** |
 | `develop` | current state of the `develop` branch, not for production |
 
 > With a backup image, a silently changed behaviour is not noticed when it
 > happens but when the backup is needed. Pin `X.Y.Z` or `X.Y`.
 
-All tags are based on `alpine:latest` - build `weekly`
+`2.0.1` contains the MariaDB client `11.8.8`, the PostgreSQL clients `17.11` and `18.6`, SQLite `3.53.4`, AWS CLI
+`2.34.63`, 7-Zip `26.01` and Alpine `3.24.2`. A release tag is built once and keeps these versions.
 
 ## Environment variables
 
 - `BACKUP` type of database backup, one of `mysql`, `mariadb`, `pgsql`, `sqlite` ***required*** 
-- `CRON_SCHEDULE` cron expression with 5 fields, for example `0 3 * * *` for a daily backup at 03:00, or one of the keywords `@yearly`, `@annually`, `@monthly`, `@weekly`, `@daily`, `@midnight`, `@hourly` and `@reboot` — note that `@reboot` runs once when the container starts and never again. A schedule that is not usable is rejected on start instead of silently never running. It has to be a single line and must only contain letters, digits, `@`, `*`, `,`, `/`, `-` and spaces, because it is written into the crontab as it is. If empty the container creates one backup and exits (default: *empty*)
+- `CRON_SCHEDULE` cron expression with 5 fields, for example `0 3 * * *` for a daily backup at 03:00, or one of `@yearly`, `@annually`, `@monthly`, `@weekly`, `@daily`, `@midnight`, `@hourly` and `@reboot` (runs once at container start, never again). A single line of letters, digits, `@`, `*`, `,`, `/`, `-` and spaces - anything else is rejected on start instead of silently never running. If empty the container creates one backup and exits (default: *empty*)
 - `CRON_RUN_ON_START` create a backup immediately when the container starts, additionally to the schedule (default: `false`)
 - `HEALTHCHECK_MAX_AGE` how old the last successful backup may get before the container is reported unhealthy, for example `26h`. Understands `m`, `h` and `d`, a plain number counts as minutes. If empty the healthcheck only reports a dead cron daemon and a failed run (default: *empty*)
-- `BACKUP_UMASK` octal file mode mask for everything a run writes — dump, archive and staging directory. A dump is the database in plain text and it stays on the backup volume after the container is gone, so it is not created world readable. `027` gives files `0640` and directories `0750`, that is owner and group. Set it to `022` if the backups are read on the host as another user (default: `027`)
+- `BACKUP_UMASK` octal file mode mask for everything a run writes — dump, archive and staging directory. `027` gives files `0640` and directories `0750`; set `022` if the backups are read on the host as another user (default: `027`)
 - `TZ` timezone the cron schedule is evaluated in, for example `Europe/Berlin` (default: `UTC`)
 - `WEBHOOK_METHOD` how the webhooks are called, `GET` or `POST` (default: `GET`)
 - `WEBHOOK_SUCCESS_URL` URL to call after a successful backup, or `WEBHOOK_SUCCESS_URL_FILE` (default: *empty*)
 - `WEBHOOK_FAILURE_URL` URL to call after a failed backup, or `WEBHOOK_FAILURE_URL_FILE` (default: *empty*)
 - `RETENTION_KEEP_LAST` number of newest backups to keep in the working directory. If empty this rule is not applied (default: *empty*)
 - `RETENTION_KEEP_DAYS` keep backups in the working directory that are not older than this number of days. If empty this rule is not applied (default: *empty*)
-- `STAGING_DIR` directory the raw dump is written to while `COMPRESS_ENABLE` is on, before it is packed into `/backup`. Only the finished archive reaches the backup target, so an unpacked dump never lies on remote storage and cannot be caught by one of its snapshots. Must be on the container's own file system, not inside `/backup`. Without compression the dump is the result and is written to `/backup` directly, and this variable has no effect (default: `/tmp/dbbackup`)
+- `STAGING_DIR` directory the raw dump is written to while `COMPRESS_ENABLE` is on, so only the finished archive reaches `/backup` and no unpacked dump ends up in a snapshot of the backup storage. Must be on the container's own file system, not inside `/backup`; without compression it has no effect (default: `/tmp/dbbackup`)
 - `COMPRESS_ENABLE` enable compression of dump with 7-Zip (default: `false`)
 - `COMPRESS_OPTIONS` 7-Zip arguments for compression (default: `a -t7z -md=20 -m0=lzma2 -mx=9 -mmt=on -aoa`)
 - `COMPRESS_ENCRYPTION_PASSWORD` 7-Zip password for encryption, or `COMPRESS_ENCRYPTION_PASSWORD_FILE` (default: *empty*)
@@ -242,12 +240,6 @@ All tags are based on `alpine:latest` - build `weekly`
 - `MYSQLDUMP_ADD_OPTIONS` additional dump options (default: *empty*)
 - `MYSQLDUMP_DATABASES` list of databases to backup (default: `--all-databases`)
 - `MYSQLDUMP_FILENAME` name of backup file, only letters, digits, `.`, `_` and `-` (default: `backup`)
-
-Connecting to MySQL 8.4 and newer fails with `TLS/SSL error: self-signed certificate in certificate chain`, because the client verifies the self-signed certificate the server creates on first start. Either install a certificate the client trusts on the server, or switch the verification off:
-
-```
-MYSQLDUMP_ADD_OPTIONS=--ssl-verify-server-cert=0
-```
 
 ***only if `BACKUP` is `pgsql`***
 
@@ -296,7 +288,7 @@ docker run --rm \
   -e MYSQL_USERNAME=<USERNAME> \
   -e MYSQL_PASSWORD='<PASSWORD>' \
   -v /tmp:/backup:rw \
-  epicsoft/dbbackup:latest
+  epicsoft/dbbackup:2.0
 ```
 
 ### PostgreSQL dump with custom filename
@@ -311,7 +303,7 @@ docker run --rm \
   -e PGSQL_FILENAME=pg-example \
   -e PGSQL_VERSION=17 \
   -v /tmp:/backup:rw \
-  epicsoft/dbbackup:latest
+  epicsoft/dbbackup:2.0
 ```
 
 ### Back up a SQLite database while the application keeps running
@@ -328,9 +320,9 @@ docker run --rm \
   -e RETENTION_KEEP_DAYS=30 \
   -e COMPRESS_ENABLE=true \
   --group-add 472 \
-  -v /srv/acc-monitoring/grafana:/data:rw \
+  -v /srv/grafana:/data:rw \
   -v /mnt/backup/grafana:/backup:rw \
-  epicsoft/dbbackup:1.0.0
+  epicsoft/dbbackup:2.0
 ```
 
 `SQLITE_MODE=backup` is the default and the safe one while the application is
@@ -356,7 +348,7 @@ docker run --rm \
   -e COMPRESS_ENABLE=true \
   -e COMPRESS_ENCRYPTION_PASSWORD='<COMPRESS-PASSWORD>' \
   -v /tmp:/backup:rw \
-  epicsoft/dbbackup:latest
+  epicsoft/dbbackup:2.0
 ```
 
 ### Read the database password from a file instead of an environment variable
@@ -369,7 +361,7 @@ docker run --rm \
   -e MYSQL_PASSWORD_FILE=/run/secrets/mysql_password \
   -v /path/to/mysql_password:/run/secrets/mysql_password:ro \
   -v /tmp:/backup:rw \
-  epicsoft/dbbackup:latest
+  epicsoft/dbbackup:2.0
 ```
 
 With Docker Compose and a secret the same setup looks like this:
@@ -377,7 +369,7 @@ With Docker Compose and a secret the same setup looks like this:
 ```yaml
 services:
   backup:
-    image: epicsoft/dbbackup:latest
+    image: epicsoft/dbbackup:2.0
     environment:
       BACKUP: mysql
       MYSQL_HOST: example.com
@@ -406,7 +398,7 @@ docker run -d --restart unless-stopped \
   -e CRON_SCHEDULE='0 3 * * *' \
   -e TZ=Europe/Berlin \
   -v /tmp:/backup:rw \
-  epicsoft/dbbackup:latest
+  epicsoft/dbbackup:2.0
 ```
 
 ### Dump a database from MariaDB and upload to S3
@@ -421,71 +413,33 @@ docker run --rm \
   -e MARIADB_USERNAME=<USERNAME> \
   -e MARIADB_PASSWORD='<PASSWORD>' \
   -e S3_ENABLE=true \
-  -e S3_UPLOAD_ENABLE=true \
   -e S3_ACCESS_KEY=<ACCESS-KEY> \
   -e S3_SECRET_KEY=<SECRET-KEY> \
   -e S3_BUCKET=backup \
   -e S3_PREFIX=subdirectory \
   -e S3_ENDPOINT=<ENDPOINT-WITHOUT-SCHEMA> \
   -e S3_S3V4=true \
-  epicsoft/dbbackup:latest
+  epicsoft/dbbackup:2.0
 ```
 
 ## Troubleshooting
 
-### `Access denied for user ... (using password: YES)` although the password is correct
+Known errors and their fixes are collected in
+[TROUBLESHOOTING.md](https://gitlab.com/epicsoft-networks/dbbackup/-/blob/main/TROUBLESHOOTING.md):
 
-Docker Compose replaces `$` in the values under `environment:` before the container ever sees them. A `$` in a password that is followed by a letter, an underscore or a `{` is read as the start of a variable name, and the whole reference is replaced - usually by an empty string, because that variable does not exist. Compose only mentions this in a warning line that is easy to miss, so the configuration looks correct while the container receives a shortened password:
+- `Access denied for user ... (using password: YES)` although the password is correct
+- `SQLite database '...' uses WAL and its directory is not writable`
+- `TLS/SSL error: self-signed certificate in certificate chain`
 
-| in the compose file | what arrives in the container |
-| --- | --- |
-| `abc$SECRET_TOKEN-def` | `abc-def` |
-| `abc${TOKEN}-def` | `abc-def` |
-| `abc$$SECRET_TOKEN-def` | `abc$SECRET_TOKEN-def` |
-| `abc$?!-def` | `abc$?!-def` |
+## Reporting problems
 
-The last two rows are the reason this is easy to misdiagnose: a `$` that is followed by a character which cannot start a variable name survives untouched, so the same password may work in one place and fail in another.
-
-To check what really arrived, compare the length with the password you configured:
-
-```bash
-docker exec <container> bash -c 'echo ${#MARIADB_PASSWORD}'
-```
-
-The robust fix is `MARIADB_PASSWORD_FILE`, `MYSQL_PASSWORD_FILE` or `PGSQL_PASSWORD_FILE` with a Docker secret, see [Secrets from files](#secrets-from-files). A file is passed through untouched, which also avoids the quoting rules of YAML. If the password has to stay in `environment:`, write every `$` as `$$`.
-
-If the length is correct, the password is not the problem. The same error is returned when no grant matches the address the connection comes from - note the host in the error message, which is the address the database sees, not necessarily the address of the backup container:
-
-```sql
-SELECT user, host FROM mysql.user WHERE user = '<USERNAME>';
-```
-
-### `SQLite database '...' uses WAL and its directory is not writable`
-
-The database is in WAL mode and its directory is mounted read-only. SQLite has to
-create a `-shm` file next to the database **even to read it**, so a read-only
-mount fails - this is a property of SQLite, not of the backup.
-
-Mount the directory read-write:
-
-```bash
--v /srv/app/data:/data:rw
-```
-
-Databases that use a rollback journal instead of WAL do work read-only. Which one
-it is can be read from byte 18 of the file header - `1` is a rollback journal,
-`2` is WAL:
-
-```bash
-dd if=/srv/app/data/app.db bs=1 skip=18 count=1 2>/dev/null | od -An -tu1
-```
-
-### `TLS/SSL error: self-signed certificate in certificate chain`
-
-The client verifies the self-signed certificate that MySQL 8.4 and newer create on first start. See the note under the `mysql` environment variables for `MYSQLDUMP_ADD_OPTIONS=--ssl-verify-server-cert=0`.
+Issues are welcome on [GitLab](https://gitlab.com/epicsoft-networks/dbbackup/-/issues) and
+[GitHub](https://github.com/epicsoft-llc/dbbackup/issues). Please report a security problem as a
+**confidential issue** on GitLab instead of a public one.
 
 ## License
 
-MIT License see [LICENSE](https://gitlab.com/epicsoft-networks/dbbackup/blob/main/LICENSE)
+[MIT](https://gitlab.com/epicsoft-networks/dbbackup/-/blob/main/LICENSE) — Copyright (c) 2024-2026 epicsoft LLC / Alexander Schwarz
 
-Please note that the MIT license only applies to the files created by epicsoft LLC. Other software may be licensed under other licenses.
+The MIT license applies only to files created by epicsoft LLC. Third-party software in the image — the database
+clients, 7-Zip, the AWS CLI, the Alpine packages and the official `alpine` image — remains under its own licenses.
