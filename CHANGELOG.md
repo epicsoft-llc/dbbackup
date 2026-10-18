@@ -20,6 +20,25 @@ from the entry below. Each release entry names the contained versions.
 
 ---
 
+## [2.0.2] - 2026-10-18
+
+OpenSSL `3.5.9` with its security fixes. Nothing changes in behaviour.
+
+### Contents
+
+- MariaDB client `11.8.8`, PostgreSQL clients `17.11` and `18.6`, SQLite
+`3.53.4`, AWS CLI `2.34.63`, 7-Zip `26.01`, OpenSSL `3.5.9`, Alpine `3.24.2`
+
+### Security
+
+- **The packages of the base image are upgraded as well.** `apk add` only
+installs what is missing and left the packages that come with `alpine:latest`
+at the state of its last point release - 2.0.1 still shipped OpenSSL `3.5.8`,
+although Alpine `3.24` already offered `3.5.9`, a security release whose most
+severe fix is rated High. The build runs `apk upgrade` first now.
+
+---
+
 ## [2.0.1] - 2026-10-18
 
 Package updates, and a pipeline that tests the image before it publishes it.

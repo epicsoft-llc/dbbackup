@@ -81,7 +81,9 @@ ENV S3_PREFIX="backup"
 ENV S3_FILENAME=""
 ENV S3_S3V4="false"
 
-RUN apk --no-cache add bash \
+#### the base image only changes with Alpine point releases - security fixes in between come with the upgrade
+RUN apk --no-cache upgrade \
+ && apk --no-cache add bash \
                        mariadb-client \
                        mariadb-connector-c \
                        mysql-client \
