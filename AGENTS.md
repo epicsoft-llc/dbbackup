@@ -316,7 +316,7 @@ the tag. Changes are never pushed to GitHub directly; the mirror would overwrite
 - `CHANGELOG.md`: `## [X.Y.Z] - <date>` — the tag jobs fail without it, and `github-release` takes the notes from
   exactly that heading.
 - The entry names the contained versions under `### Contents`, read from the image right before tagging:
-  `docker run --rm --entrypoint sh epicsoft/dbbackup:latest -c 'cat /etc/alpine-release; mariadb-dump --version; /usr/libexec/postgresql17/pg_dump --version; /usr/libexec/postgresql18/pg_dump --version; sqlite3 --version; aws --version; 7z | sed -n 2p'`
+  `docker run --rm --entrypoint sh epicsoft/dbbackup:latest -c 'cat /etc/alpine-release; mariadb-dump --version; /usr/libexec/postgresql17/pg_dump --version; /usr/libexec/postgresql18/pg_dump --version; sqlite3 --version; aws --version; 7z | sed -n 2p; apk list -I libssl3'`
 - `README.md`: the `## Versions` section, and on a new minor or major version the `X.Y` in the examples.
 - Tag **without `v`**: `X.Y.Z`.
 

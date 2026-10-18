@@ -180,7 +180,7 @@ versions are listed in the [changelog](https://gitlab.com/epicsoft-networks/dbba
 
 | Tag | Content |
 |---|---|
-| `2.0.1` | exactly this build - **use this in production** |
+| `2.0.2` | exactly this build - **use this in production** |
 | `2.0` | latest patch of `2.0` - safe to follow, no behaviour changes |
 | `2` | latest minor of `2` - new features, no breaking changes |
 | `latest` | the `main` branch, rebuilt weekly on `alpine:latest` - **can change the major version without warning** |
@@ -189,8 +189,8 @@ versions are listed in the [changelog](https://gitlab.com/epicsoft-networks/dbba
 > With a backup image, a silently changed behaviour is not noticed when it
 > happens but when the backup is needed. Pin `X.Y.Z` or `X.Y`.
 
-`2.0.1` contains the MariaDB client `11.8.8`, the PostgreSQL clients `17.11` and `18.6`, SQLite `3.53.4`, AWS CLI
-`2.34.63`, 7-Zip `26.01` and Alpine `3.24.2`. A release tag is built once and keeps these versions.
+`2.0.2` contains the MariaDB client `11.8.8`, the PostgreSQL clients `17.11` and `18.6`, SQLite `3.53.4`, AWS CLI
+`2.34.63`, 7-Zip `26.01`, OpenSSL `3.5.9` and Alpine `3.24.2`. A release tag is built once and keeps these versions.
 
 ## Environment variables
 
