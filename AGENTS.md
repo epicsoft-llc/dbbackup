@@ -325,3 +325,5 @@ the tag. Changes are never pushed to GitHub directly; the mirror would overwrite
 - `.editorconfig`: 2-space indent, LF, UTF-8, final newline, trailing whitespace trimmed (except Markdown), 120 columns
   (180 for YAML, off for Markdown and shell scripts); `.gitattributes` keeps LF in the repository.
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `ci:`, `chore:`).
+- `apk --no-cache upgrade` comes before `apk add`: `apk add` never upgrades the packages of the base image, so their
+  security fixes would only arrive with the next base image.
